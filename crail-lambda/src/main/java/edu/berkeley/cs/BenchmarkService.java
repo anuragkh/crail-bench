@@ -114,7 +114,9 @@ public class BenchmarkService {
       try {
         c.write(String.valueOf(i));
       } catch (RuntimeException e) {
-        log.warn("WriteOp failed: " + e.getMessage());
+        log.warn("WriteOp failed: ");
+        e.printStackTrace(log.getPrintWriter());
+        log.flush();
         --i;
         errCount++;
         if (errCount > MAX_ERRORS) {
@@ -135,7 +137,9 @@ public class BenchmarkService {
         String retValue = c.read(String.valueOf(i));
         assert retValue.length() == size;
       } catch (RuntimeException e) {
-        log.warn("ReadOp failed: " + e.getMessage());
+        log.warn("ReadOp failed: ");
+        e.printStackTrace(log.getPrintWriter());
+        log.flush();
         --i;
         errCount++;
         if (errCount > MAX_ERRORS) {
