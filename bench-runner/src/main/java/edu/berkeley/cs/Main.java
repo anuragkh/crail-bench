@@ -33,7 +33,7 @@ public class Main {
           if (log.equalsIgnoreCase("CLOSE")) {
             break;
           }
-          System.err.println("FUNCTION_LOG " + log);
+          System.err.println("Function @ " + clientSocket.toString() + ": " + log);
         }
         in.close();
         clientSocket.close();
