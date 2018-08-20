@@ -31,9 +31,9 @@ class Crail {
     int mObjectSize = Integer.parseInt(conf.getProperty("size", "1024"));
     mBasePath = conf.getProperty("path", "/test");
 
-    if (mObjectSize == CrailConstants.BUFFER_SIZE){
+    if (mObjectSize == CrailConstants.BUFFER_SIZE) {
       mBuffer = mStore.allocateBuffer();
-    } else if (mObjectSize < CrailConstants.BUFFER_SIZE){
+    } else if (mObjectSize < CrailConstants.BUFFER_SIZE) {
       CrailBuffer _buf = mStore.allocateBuffer();
       _buf.clear().limit(mObjectSize);
       mBuffer = _buf.slice();
@@ -44,6 +44,7 @@ class Crail {
     byte[] chars = new byte[mObjectSize];
     Arrays.fill(chars, (byte) 0);
     mBuffer.put(chars);
+    mStore.create(mBasePath, CrailNodeType.DIRECTORY, STORAGE_CLASS, LOCATION_CLASS, true).get();
   }
 
   void write(String key) {
