@@ -57,7 +57,6 @@ public class BenchmarkService {
 
     public void close() throws IOException {
       write("CLOSE");
-      this.out.close();
       this.socket.shutdownInput();
       this.socket.shutdownOutput();
       this.socket.close();
