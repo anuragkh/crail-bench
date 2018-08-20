@@ -27,13 +27,14 @@ public class Main {
     public void run() {
       try {
         clientSocket = socket.accept();
+        String name = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
         in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         while (clientSocket.isConnected()) {
           String log = in.readLine();
           if (log.equalsIgnoreCase("CLOSE")) {
             break;
           }
-          System.err.println("Function @ " + clientSocket.toString() + ": " + log);
+          System.err.println("Function @ " + name + ": " + log);
         }
         in.close();
         clientSocket.close();
