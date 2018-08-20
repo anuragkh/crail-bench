@@ -1,0 +1,28 @@
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Intellij
+.idea/
+*.eml
+*.iml
+
+# Mac OSX
+.DS_Store
+
+# Build and Distribution Directories
+crail-lambda/target/
+bench-runner/target/
+target/
+
+# vim tmps
+.*sw*
+
+# sbt
+project/project
+project/target
+.history
+
+# Maven tmps
+*.versionsBackup
