@@ -70,7 +70,7 @@ class BenchmarkService {
       if (data.length() > MSG_LEN) {
         return data.substring(0, MSG_LEN - 3) + "...";
       }
-      return String.format("%1$-" + MSG_LEN + "s", data);
+      return String.format("%-" + MSG_LEN + "s", data);
     }
   }
 
