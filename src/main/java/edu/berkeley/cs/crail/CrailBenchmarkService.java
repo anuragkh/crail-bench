@@ -22,8 +22,6 @@ public class CrailBenchmarkService implements BenchmarkService {
   private static final int BENCHMARK_READ = 1;
   private static final int BENCHMARK_WRITE = 2;
   private static final int BENCHMARK_DESTROY = 4;
-  private static final String CRAIL_HOME = "CRAIL_HOME";
-  private static final String LAMBDA_TASK_ROOT = "LAMBDA_TASK_ROOT";
 
   public class Logger implements Closeable {
 
@@ -136,16 +134,6 @@ public class CrailBenchmarkService implements BenchmarkService {
     int warmUpCount = nOps / 10;
     long startUs = nowUs();
     String outPrefix = "crail/crail_" + String.valueOf(size);
-
-    if (System.getenv(CRAIL_HOME) == null) {
-      String crailHome = System.getenv(LAMBDA_TASK_ROOT);
-      if (crailHome != null) {
-        log.info("Setting environment variable CRAIL_HOME to " + crailHome);
-        injectEnvironmentVariable(CRAIL_HOME, crailHome);
-      } else {
-        log.warn("CRAIL_HOME is not set, may not load appropriate configuration variables");
-      }
-    }
 
     log.info("Initializing storage interface...");
     c.init(conf, log);

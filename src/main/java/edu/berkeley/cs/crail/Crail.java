@@ -31,6 +31,7 @@ class Crail implements Closeable {
   private static final String DEFAULT_RPC = "org.apache.crail.namenode.rpc.tcp.TcpNameNode";
   private static final String DEFAULT_CACHEPATH = "/tmp/cache";
   private static final String DEFAULT_CACHELIMIT = "268435456";
+
   void init(Properties conf, Logger log) throws Exception {
     CrailConfiguration c = new CrailConfiguration();
     c.set("crail.namenode.address", conf.getProperty("namenode_address", DEFAULT_NAMENODE));
