@@ -71,8 +71,7 @@ class Crail {
       CrailFile f = lookupFile(mBasePath + "/" + key);
       CrailInputStream is = f.getDirectInputStream(f.getCapacity());
       mBuffer.clear();
-      Future<CrailResult> result = is.read(mBuffer);
-      result.get();
+      is.read(mBuffer).get().getLen();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
