@@ -57,8 +57,9 @@ class Crail {
   void write(String key) {
     try {
       CrailFile f = createFile(mBasePath + "/" + key);
+      f.syncDir();
       mBuffer.clear();
-      f.getDirectOutputStream(CrailConstants.BUFFER_SIZE).write(mBuffer).get();
+      f.getDirectOutputStream(Integer.MAX_VALUE).write(mBuffer).get();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
