@@ -50,6 +50,7 @@ class Crail {
   void write(String key) {
     try {
       CrailFile f = create(mBasePath + "/" + key);
+      mBuffer.clear();
       f.getDirectOutputStream(0).write(mBuffer).get();
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -57,10 +58,10 @@ class Crail {
   }
 
   String read(String key) {
-    mBuffer.position(0);
     try {
       CrailFile f = lookup(mBasePath + "/" + key);
       CrailInputStream is = f.getDirectInputStream(f.getCapacity());
+      mBuffer.clear();
       is.read(mBuffer).get();
     } catch (Exception e) {
       throw new RuntimeException(e);
