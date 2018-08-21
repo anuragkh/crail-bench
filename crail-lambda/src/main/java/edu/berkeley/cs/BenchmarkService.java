@@ -12,16 +12,17 @@ import java.util.Map;
 import java.util.Properties;
 
 class BenchmarkService {
+
   private static final int MAX_NUM_OPS = 1000;
   private static final int MAX_DATA_SIZE = 1073741824;
   private static final int MAX_ERRORS = 1000;
-  private static final int MAX_EXECUTION_TIME_US = 240 * 1000 * 1000;
   private static final String RESULT_BUCKET = "bench-results";
   private static final int BENCHMARK_READ = 1;
   private static final int BENCHMARK_WRITE = 2;
   private static final int BENCHMARK_DESTROY = 4;
 
   class Logger implements Closeable {
+
     private Socket socket;
     private PrintWriter out;
 
@@ -74,9 +75,9 @@ class BenchmarkService {
     Properties props = new Properties();
     props.putAll(conf);
 
-    String distribution = props.getProperty("distribution");
+    String distribution = conf.getOrDefault("distribution", "sequential");
     int size = Integer.parseInt(conf.getOrDefault("size", "1024"));
-    int nOps = numOps(size);
+    int nOps = Integer.parseInt(conf.getOrDefault("num_ops", numOps(size)));
     KeyGenerator kGen;
     if (distribution.equalsIgnoreCase("zipf")) {
       kGen = new ZipfKeyGenerator(0.0, nOps);
@@ -85,7 +86,7 @@ class BenchmarkService {
     } else {
       throw new RuntimeException("Unrecognized key distribution: " + distribution);
     }
-    String modeStr = props.getProperty("mode");
+    String modeStr = conf.getOrDefault("mode", "write_read_destroy");
     int mode = 0;
     if (modeStr.contains("read")) {
       mode |= BENCHMARK_READ;
@@ -96,10 +97,11 @@ class BenchmarkService {
     if (modeStr.contains("destroy")) {
       mode |= BENCHMARK_DESTROY;
     }
-    boolean warmUp = Boolean.parseBoolean(props.getProperty("warm_up"));
-    long remaining = MAX_EXECUTION_TIME_US - (nowUs() - startUs);
-    String host = props.getProperty("logger_host");
-    int port = Integer.parseInt(props.getProperty("logger_port"));
+    boolean warmUp = Boolean.parseBoolean(conf.getOrDefault("warm_up", "true"));
+    long timeoutUs = Long.parseLong(conf.getOrDefault("timeout", "240")) * 1000 * 1000;
+    long remaining = timeoutUs - (nowUs() - startUs);
+    String host = conf.getOrDefault("logger_host", "localhost");
+    int port = Integer.parseInt(conf.getOrDefault("logger_port", "8888"));
 
     Logger log;
     try {
@@ -245,8 +247,9 @@ class BenchmarkService {
   }
 
   private static boolean timeBound(long startUs, long maxUs, Logger log) {
-    if (nowUs() - startUs < maxUs)
+    if (nowUs() - startUs < maxUs) {
       return true;
+    }
     log.warn("Benchmark timed out...");
     return false;
   }
@@ -255,7 +258,7 @@ class BenchmarkService {
     return System.nanoTime() / 1000;
   }
 
-  private int numOps(int objSize) {
-    return Math.min(MAX_NUM_OPS, MAX_DATA_SIZE / objSize);
+  private String numOps(int objSize) {
+    return String.valueOf(Math.min(MAX_NUM_OPS, MAX_DATA_SIZE / objSize));
   }
 }
