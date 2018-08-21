@@ -51,7 +51,7 @@ class LogServer implements Runnable {
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
             client.read(buffer);
-            String msg = StandardCharsets.UTF_8.decode(buffer).toString();
+            String msg = StandardCharsets.UTF_8.decode(buffer).toString().trim();
             if (msg.equals(POISON_PILL)) {
               client.close();
               System.err.println("Function @ " + client.getRemoteAddress() + " Finished execution");
