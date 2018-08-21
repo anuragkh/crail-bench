@@ -26,10 +26,6 @@ class Crail {
   private CrailBuffer mBuffer;
   private String mBasePath;
 
-  private static CrailNodeType NODE_TYPE = CrailNodeType.DATAFILE;
-  private static CrailStorageClass STORAGE_CLASS = CrailStorageClass.DEFAULT;
-  private static CrailLocationClass LOCATION_CLASS = CrailLocationClass.DEFAULT;
-
   void init(Properties conf) throws Exception {
     CrailConfiguration cConf = new CrailConfiguration();
     mStore = CrailStore.newInstance(cConf);
@@ -48,8 +44,12 @@ class Crail {
       mBuffer = OffHeapBuffer.wrap(ByteBuffer.allocateDirect(mObjectSize));
     }
 
+    System.out.println("Buffer size: " + mBuffer.capacity());
+
     if (!createBasePath()) {
-      System.err.println("Path already exists: " + mBasePath);
+      System.out.println("Path already exists: " + mBasePath);
+    } else {
+      System.out.println("Path created: " + mBasePath);
     }
   }
 
@@ -85,7 +85,8 @@ class Crail {
 
   private boolean createBasePath() {
     try {
-      mStore.create(mBasePath, CrailNodeType.DIRECTORY, STORAGE_CLASS, LOCATION_CLASS, true).get();
+      mStore.create(mBasePath, CrailNodeType.DIRECTORY, CrailStorageClass.DEFAULT,
+          CrailLocationClass.DEFAULT, true).get();
     } catch (Exception e) {
       if (e instanceof IOException && e.getMessage().startsWith("File already exists")) {
         return false;
@@ -97,7 +98,9 @@ class Crail {
   }
 
   private CrailFile createFile(String key) throws Exception {
-    return mStore.create(key, NODE_TYPE, STORAGE_CLASS, LOCATION_CLASS, true).get().asFile();
+    return mStore
+        .create(key, CrailNodeType.DATAFILE, CrailStorageClass.PARENT, CrailLocationClass.PARENT,
+            true).get().asFile();
   }
 
   private CrailFile lookupFile(String key) throws Exception {
