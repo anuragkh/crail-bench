@@ -8,6 +8,22 @@ import java.util.Map;
 import org.ini4j.Ini;
 
 public class Main {
+
+  private static BenchmarkService localService() {
+    return new BenchmarkService() {
+      private void mHandler(Map<String, String> conf) {
+        super.handler(conf);
+      }
+
+      @Override
+      void handler(Map<String, String> conf) {
+        Thread t = new Thread(() -> mHandler(conf));
+        t.setDaemon(true);
+        t.start();
+      }
+    };
+  }
+
   public static void main(String[] args) throws IOException, InterruptedException {
     if (args.length != 2) {
       System.err.println("Usage: bench_runner [command] [conf_file]");
@@ -28,7 +44,7 @@ public class Main {
           .lambdaClient(AWSLambdaClientBuilder.defaultClient())
           .build(BenchmarkService.class);
     } else if (command.equalsIgnoreCase("invoke-local")) {
-      service = new BenchmarkService();
+      service = localService();
     } else {
       System.err.println("Unrecognized command: " + command);
       return;
