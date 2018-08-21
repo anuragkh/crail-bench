@@ -37,6 +37,8 @@ class Crail {
     mObjectSize = Integer.parseInt(conf.getProperty("size", "1024"));
     mBasePath = conf.getProperty("path", "/test");
 
+    System.out.println("path: " + mBasePath + ", size: " + mObjectSize);
+
     if (mObjectSize == CrailConstants.BUFFER_SIZE) {
       mBuffer = mStore.allocateBuffer();
     } else if (mObjectSize < CrailConstants.BUFFER_SIZE) {
