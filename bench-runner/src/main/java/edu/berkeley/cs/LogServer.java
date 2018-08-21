@@ -53,6 +53,7 @@ class LogServer implements Runnable {
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
             client.read(buffer);
+            buffer.flip();
             String msgBuf = StandardCharsets.UTF_8.decode(buffer).toString().trim();
             if (msgBuf.contains(EOM)) {
               printMessages(client.getRemoteAddress(), msgBuf.replace(EOM, "Finished execution"));
@@ -64,7 +65,7 @@ class LogServer implements Runnable {
             } else {
               printMessages(client.getRemoteAddress(), msgBuf);
             }
-            buffer.flip().clear();
+            buffer.clear();
           }
           iter.remove();
         }
