@@ -1,9 +1,12 @@
 package edu.berkeley.cs;
 
+import edu.berkeley.cs.BenchmarkService.Logger;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.apache.crail.CrailBuffer;
 import org.apache.crail.CrailFile;
@@ -22,6 +25,7 @@ class Crail {
   private CrailStore mStore;
   private CrailBuffer mBuffer;
   private String mBasePath;
+  private int mObjectSize;
 
   private static CrailNodeType NODE_TYPE = CrailNodeType.DATAFILE;
   private static CrailStorageClass STORAGE_CLASS = CrailStorageClass.DEFAULT;
@@ -30,7 +34,7 @@ class Crail {
   void init(Properties conf) throws Exception {
     CrailConfiguration cConf = new CrailConfiguration();
     mStore = CrailStore.newInstance(cConf);
-    int mObjectSize = Integer.parseInt(conf.getProperty("size", "1024"));
+    mObjectSize = Integer.parseInt(conf.getProperty("size", "1024"));
     mBasePath = conf.getProperty("path", "/test");
 
     if (mObjectSize == CrailConstants.BUFFER_SIZE) {
@@ -46,14 +50,17 @@ class Crail {
     byte[] chars = new byte[mObjectSize];
     Arrays.fill(chars, (byte) 0);
     mBuffer.put(chars);
-    mStore.create(mBasePath, CrailNodeType.DIRECTORY, STORAGE_CLASS, LOCATION_CLASS, true).get();
+
+    if (!createBasePath()) {
+      System.err.println("Path already exists: " + mBasePath);
+    }
   }
 
   void write(String key) {
     try {
-      CrailFile f = create(mBasePath + "/" + key);
+      CrailFile f = createFile(mBasePath + "/" + key);
       mBuffer.clear();
-      f.getDirectOutputStream(0).write(mBuffer).get();
+      f.getDirectOutputStream(mObjectSize).write(mBuffer).get();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -61,7 +68,7 @@ class Crail {
 
   String read(String key) {
     try {
-      CrailFile f = lookup(mBasePath + "/" + key);
+      CrailFile f = lookupFile(mBasePath + "/" + key);
       CrailInputStream is = f.getDirectInputStream(f.getCapacity());
       mBuffer.clear();
       Future<CrailResult> result = is.read(mBuffer);
@@ -79,11 +86,24 @@ class Crail {
     mStore.close();
   }
 
-  private CrailFile create(String key) throws Exception {
+  private boolean createBasePath() {
+    try {
+      mStore.create(mBasePath, CrailNodeType.DIRECTORY, STORAGE_CLASS, LOCATION_CLASS, true).get();
+    } catch (Exception e) {
+      if (e instanceof IOException && e.getMessage().startsWith("File already exists")) {
+        return false;
+      } else {
+        throw new RuntimeException(e);
+      }
+    }
+    return true;
+  }
+
+  private CrailFile createFile(String key) throws Exception {
     return mStore.create(key, NODE_TYPE, STORAGE_CLASS, LOCATION_CLASS, true).get().asFile();
   }
 
-  private CrailFile lookup(String key) throws Exception {
+  private CrailFile lookupFile(String key) throws Exception {
     return mStore.lookup(key).get().asFile();
   }
 }
