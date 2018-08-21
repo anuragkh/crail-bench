@@ -59,8 +59,7 @@ class Crail {
       CrailFile f = createFile(mBasePath + "/" + key);
       mBuffer.clear();
       CrailOutputStream out = f.getDirectOutputStream(Integer.MAX_VALUE);
-      long len = out.write(mBuffer).get().getLen();
-      assert len == mBuffer.capacity();
+      out.write(mBuffer).get().getLen();
       out.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -82,7 +81,7 @@ class Crail {
 
   void destroy() throws Exception {
     mStore.freeBuffer(mBuffer);
-    mStore.delete(mBasePath, true);
+    mStore.delete(mBasePath, true).get();
     mStore.getStatistics().print("close");
     mStore.close();
   }
