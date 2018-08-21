@@ -29,7 +29,8 @@ class Crail implements Closeable {
   private static final String DEFAULT_BLOCKSIZE = "4096";
   private static final String DEFAULT_BUFFERSIZE = "4096";
   private static final String DEFAULT_RPC = "org.apache.crail.namenode.rpc.tcp.TcpNameNode";
-
+  private static final String DEFAULT_CACHEPATH = "/tmp/cache";
+  private static final String DEFAULT_CACHELIMIT = "268435456";
   void init(Properties conf, Logger log) throws Exception {
     CrailConfiguration c = new CrailConfiguration();
     c.set("crail.namenode.address", conf.getProperty("namenode_address", DEFAULT_NAMENODE));
@@ -37,7 +38,8 @@ class Crail implements Closeable {
     c.set("crail.blocksize", conf.getProperty("block_size", DEFAULT_BLOCKSIZE));
     c.set("crail.buffersize", conf.getProperty("buffer_size", DEFAULT_BUFFERSIZE));
     c.set("crail.namenode.rpctype", conf.getProperty("rpc_type", DEFAULT_RPC));
-
+    c.set("crail.cachepath", conf.getProperty("cache_path", DEFAULT_CACHEPATH));
+    c.set("crail.cachelimit", conf.getProperty("cache_limit", DEFAULT_CACHELIMIT));
     mStore = CrailStore.newInstance(new CrailConfiguration());
     int mObjectSize = Integer.parseInt(conf.getProperty("size", "1024"));
     mBasePath = conf.getProperty("path", "/test");
