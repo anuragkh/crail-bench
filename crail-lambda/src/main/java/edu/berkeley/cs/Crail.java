@@ -13,6 +13,7 @@ import org.apache.crail.CrailFile;
 import org.apache.crail.CrailInputStream;
 import org.apache.crail.CrailLocationClass;
 import org.apache.crail.CrailNodeType;
+import org.apache.crail.CrailOutputStream;
 import org.apache.crail.CrailResult;
 import org.apache.crail.CrailStorageClass;
 import org.apache.crail.CrailStore;
@@ -57,7 +58,9 @@ class Crail {
     try {
       CrailFile f = createFile(mBasePath + "/" + key);
       mBuffer.clear();
-      f.getDirectOutputStream(Integer.MAX_VALUE).write(mBuffer).get();
+      CrailOutputStream out = f.getDirectOutputStream(Integer.MAX_VALUE);
+      out.write(mBuffer).get();
+      out.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
