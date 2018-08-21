@@ -2,6 +2,7 @@ package edu.berkeley.cs;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -13,7 +14,7 @@ import java.util.Set;
 
 class LogServer implements Runnable {
 
-  private static final String POISON_PILL = "CLOSE";
+  private static final String EOM = "CLOSE";
 
   private Selector selector;
   private ServerSocketChannel serverSocket;
@@ -36,8 +37,9 @@ class LogServer implements Runnable {
       int numClosed = 0;
       while (serverSocket.isOpen()) {
         int readyChannels = selector.select();
-        if (readyChannels == 0)
+        if (readyChannels == 0) {
           continue;
+        }
 
         Set<SelectionKey> selectedKeys = selector.selectedKeys();
         Iterator<SelectionKey> iter = selectedKeys.iterator();
@@ -51,16 +53,16 @@ class LogServer implements Runnable {
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
             client.read(buffer);
-            String msg = StandardCharsets.UTF_8.decode(buffer).toString().trim();
-            if (msg.equals(POISON_PILL)) {
+            String msgBuf = StandardCharsets.UTF_8.decode(buffer).toString().trim();
+            if (msgBuf.contains(EOM)) {
+              printMessages(client.getRemoteAddress(), msgBuf.replace(EOM, "Finished execution"));
               client.close();
-              System.err.println("Function @ " + client.getRemoteAddress() + " Finished execution");
               numClosed++;
               if (numClosed == numConnections) {
                 serverSocket.close();
               }
             } else {
-              System.err.println("Function @ " + client.getRemoteAddress() + ": " + msg);
+              printMessages(client.getRemoteAddress(), msgBuf);
             }
             buffer.flip().clear();
           }
@@ -70,6 +72,12 @@ class LogServer implements Runnable {
       selector.close();
     } catch (IOException e) {
       e.printStackTrace();
+    }
+  }
+
+  private void printMessages(SocketAddress address, String msgBuf) {
+    for (String msg : msgBuf.split("\\r?\\n")) {
+      System.err.println("Function @ " + address + ": " + msg);
     }
   }
 }
