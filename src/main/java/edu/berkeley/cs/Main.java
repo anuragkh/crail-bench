@@ -40,11 +40,11 @@ public class Main {
     Ini ini = new Ini();
     ini.load(new File(iniFile));
     Map<String, String> conf = ini.get("crail");
-    CrailBenchmarkService service;
+    BenchmarkService service;
     if (command.equalsIgnoreCase("invoke")) {
       service = LambdaInvokerFactory.builder()
           .lambdaClient(AWSLambdaClientBuilder.defaultClient())
-          .build(CrailBenchmarkService.class);
+          .build(BenchmarkService.class);
     } else if (command.equalsIgnoreCase("invoke-local")) {
       service = localService();
     } else {
