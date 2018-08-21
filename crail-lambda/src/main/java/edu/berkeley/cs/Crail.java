@@ -84,12 +84,7 @@ class Crail implements Closeable {
       mStore.create(mBasePath, CrailNodeType.DIRECTORY, CrailStorageClass.DEFAULT,
           CrailLocationClass.DEFAULT, true).get();
     } catch (Exception e) {
-      if (e instanceof IOException && e.getMessage()
-          .startsWith("createNode: ERROR: File already exists")) {
-        return false;
-      } else {
-        throw new RuntimeException(e);
-      }
+      return false;
     }
     return true;
   }
