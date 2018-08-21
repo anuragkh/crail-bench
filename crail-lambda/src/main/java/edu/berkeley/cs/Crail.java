@@ -81,7 +81,6 @@ class Crail {
 
   void destroy() throws Exception {
     mStore.freeBuffer(mBuffer);
-    mStore.delete(mBasePath, true).get();
     mStore.getStatistics().print("close");
     mStore.close();
   }
