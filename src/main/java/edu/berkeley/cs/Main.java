@@ -2,7 +2,7 @@ package edu.berkeley.cs;
 
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.invoke.LambdaInvokerFactory;
-import edu.berkeley.cs.crail.BenchmarkService;
+import edu.berkeley.cs.crail.CrailBenchmarkService;
 import edu.berkeley.cs.log.LogServer;
 import java.io.File;
 import java.io.IOException;
@@ -11,8 +11,8 @@ import org.ini4j.Ini;
 
 public class Main {
 
-  private static BenchmarkService localService() {
-    return new BenchmarkService() {
+  private static CrailBenchmarkService localService() {
+    return new CrailBenchmarkService() {
       private void mHandler(Map<String, String> conf) {
         super.handler(conf);
       }
@@ -40,11 +40,11 @@ public class Main {
     Ini ini = new Ini();
     ini.load(new File(iniFile));
     Map<String, String> conf = ini.get("crail");
-    BenchmarkService service;
+    CrailBenchmarkService service;
     if (command.equalsIgnoreCase("invoke")) {
       service = LambdaInvokerFactory.builder()
           .lambdaClient(AWSLambdaClientBuilder.defaultClient())
-          .build(BenchmarkService.class);
+          .build(CrailBenchmarkService.class);
     } else if (command.equalsIgnoreCase("invoke-local")) {
       service = localService();
     } else {

@@ -1,6 +1,6 @@
 package edu.berkeley.cs.crail;
 
-import edu.berkeley.cs.crail.BenchmarkService.Logger;
+import edu.berkeley.cs.crail.CrailBenchmarkService.Logger;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
