@@ -25,8 +25,7 @@ class Crail implements Closeable {
   private String mBasePath;
 
   void init(Properties conf, Logger log) throws Exception {
-    CrailConfiguration cConf = new CrailConfiguration();
-    mStore = CrailStore.newInstance(cConf);
+    mStore = CrailStore.newInstance(new CrailConfiguration());
     int mObjectSize = Integer.parseInt(conf.getProperty("size", "1024"));
     mBasePath = conf.getProperty("path", "/test");
 
