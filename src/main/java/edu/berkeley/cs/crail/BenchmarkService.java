@@ -10,6 +10,7 @@ import edu.berkeley.cs.keygen.ZipfKeyGenerator;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Field;
 import java.net.Socket;
 import java.util.Map;
 import java.util.Properties;
@@ -21,6 +22,8 @@ public class BenchmarkService {
   private static final int BENCHMARK_READ = 1;
   private static final int BENCHMARK_WRITE = 2;
   private static final int BENCHMARK_DESTROY = 4;
+  private static final String CRAIL_HOME = "CRAIL_HOME";
+  private static final String LAMBDA_TASK_ROOT = "LAMBDA_TASK_ROOT";
 
   public class Logger implements Closeable {
 
@@ -134,6 +137,12 @@ public class BenchmarkService {
     int warmUpCount = nOps / 10;
     long startUs = nowUs();
     String outPrefix = "crail/crail_" + String.valueOf(size);
+
+    if (System.getenv(CRAIL_HOME) == null) {
+      String crailHome = System.getenv(LAMBDA_TASK_ROOT);
+      log.info("Setting environment variable CRAIL_HOME to " + crailHome);
+      injectEnvironmentVariable(CRAIL_HOME, crailHome);
+    }
 
     log.info("Initializing storage interface...");
     c.init(conf, log);
@@ -251,6 +260,38 @@ public class BenchmarkService {
 
   private static long nowUs() {
     return System.nanoTime() / 1000;
+  }
+
+  private static void injectEnvironmentVariable(String key, String value)
+      throws Exception {
+
+    Class<?> processEnvironment = Class.forName("java.lang.ProcessEnvironment");
+
+    Field unmodifiableMapField = getAccessibleField(processEnvironment,
+        "theUnmodifiableEnvironment");
+    Object unmodifiableMap = unmodifiableMapField.get(null);
+    injectIntoUnmodifiableMap(key, value, unmodifiableMap);
+
+    Field mapField = getAccessibleField(processEnvironment, "theEnvironment");
+    Map<String, String> map = (Map<String, String>) mapField.get(null);
+    map.put(key, value);
+  }
+
+  private static Field getAccessibleField(Class<?> clazz, String fieldName)
+      throws NoSuchFieldException {
+
+    Field field = clazz.getDeclaredField(fieldName);
+    field.setAccessible(true);
+    return field;
+  }
+
+  private static void injectIntoUnmodifiableMap(String key, String value, Object map)
+      throws ReflectiveOperationException {
+
+    Class unmodifiableMap = Class.forName("java.util.Collections$UnmodifiableMap");
+    Field field = getAccessibleField(unmodifiableMap, "m");
+    Object obj = field.get(map);
+    ((Map<String, String>) obj).put(key, value);
   }
 
 }
