@@ -48,10 +48,6 @@ class Crail {
     } else {
       mBuffer = OffHeapBuffer.wrap(ByteBuffer.allocateDirect(mObjectSize));
     }
-    // Populate mBuffer
-    byte[] chars = new byte[mObjectSize];
-    Arrays.fill(chars, (byte) 0);
-    mBuffer.put(chars);
 
     if (!createBasePath()) {
       System.err.println("Path already exists: " + mBasePath);
@@ -62,7 +58,7 @@ class Crail {
     try {
       CrailFile f = createFile(mBasePath + "/" + key);
       mBuffer.clear();
-      f.getDirectOutputStream(mObjectSize).write(mBuffer).get();
+      f.getDirectOutputStream(CrailConstants.BUFFER_SIZE).write(mBuffer).get();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
