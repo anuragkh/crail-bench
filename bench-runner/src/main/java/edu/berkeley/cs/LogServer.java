@@ -7,6 +7,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -50,7 +51,7 @@ class LogServer implements Runnable {
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
             client.read(buffer);
-            String msg = new String(buffer.array()).trim();
+            String msg = StandardCharsets.UTF_8.decode(buffer).toString();
             if (msg.equals(POISON_PILL)) {
               client.close();
               System.err.println("Function @ " + client.getRemoteAddress() + " Finished execution");
@@ -61,7 +62,7 @@ class LogServer implements Runnable {
             } else {
               System.err.println("Function @ " + client.getRemoteAddress() + ": " + msg);
             }
-            buffer.clear();
+            buffer.flip().clear();
           }
           iter.remove();
         }

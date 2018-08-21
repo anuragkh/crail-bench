@@ -23,6 +23,7 @@ class BenchmarkService {
 
     private Socket socket;
     private PrintWriter out;
+    private static final int MSG_LEN = 4096;
 
     Logger(String host, int port) throws IOException {
       this.socket = new Socket(host, port);
@@ -42,7 +43,7 @@ class BenchmarkService {
     }
 
     private void write(String data) {
-      this.out.write(data + "\n");
+      this.out.write(formatMessage(data));
       this.out.flush();
     }
 
@@ -63,6 +64,13 @@ class BenchmarkService {
       this.socket.shutdownInput();
       this.socket.shutdownOutput();
       this.socket.close();
+    }
+
+    private String formatMessage(String data) {
+      if (data.length() > MSG_LEN) {
+        return data.substring(0, MSG_LEN - 3) + "...";
+      }
+      return String.format("%1$-" + MSG_LEN + "s", data);
     }
   }
 
