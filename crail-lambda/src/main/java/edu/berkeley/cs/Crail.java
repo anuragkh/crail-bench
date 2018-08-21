@@ -1,6 +1,8 @@
 package edu.berkeley.cs;
 
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.IO;
 import edu.berkeley.cs.BenchmarkService.Logger;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -21,7 +23,7 @@ import org.apache.crail.conf.CrailConfiguration;
 import org.apache.crail.conf.CrailConstants;
 import org.apache.crail.memory.OffHeapBuffer;
 
-class Crail {
+class Crail implements Closeable {
 
   private CrailStore mStore;
   private CrailBuffer mBuffer;
@@ -81,7 +83,6 @@ class Crail {
   void destroy() throws Exception {
     mStore.freeBuffer(mBuffer);
     mStore.getStatistics().print("close");
-    mStore.close();
   }
 
   private boolean createBasePath() {
@@ -106,5 +107,16 @@ class Crail {
 
   private CrailFile lookupFile(String key) throws Exception {
     return mStore.lookup(key).get().asFile();
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (mStore != null) {
+      try {
+        mStore.close();
+      } catch (Exception e) {
+        throw new IOException(e);
+      }
+    }
   }
 }
