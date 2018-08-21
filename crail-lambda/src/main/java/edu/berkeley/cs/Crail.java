@@ -76,6 +76,7 @@ class Crail implements Closeable {
 
   void destroy() throws Exception {
     mStore.freeBuffer(mBuffer);
+    mStore.delete(mBasePath, true);
     mStore.getStatistics().print("close");
   }
 
