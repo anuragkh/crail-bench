@@ -1,9 +1,9 @@
-package edu.berkeley.cs;
+package edu.berkeley.cs.keygen;
 
 public class SequentialKeyGenerator implements KeyGenerator {
   private long currentKey;
 
-  SequentialKeyGenerator() {
+  public SequentialKeyGenerator() {
     currentKey = 0;
   }
 

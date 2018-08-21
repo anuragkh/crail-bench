@@ -1,4 +1,4 @@
-package edu.berkeley.cs;
+package edu.berkeley.cs.keygen;
 
 public interface KeyGenerator {
   String next();

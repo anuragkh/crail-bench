@@ -2,6 +2,8 @@ package edu.berkeley.cs;
 
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.invoke.LambdaInvokerFactory;
+import edu.berkeley.cs.crail.BenchmarkService;
+import edu.berkeley.cs.log.LogServer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -16,7 +18,7 @@ public class Main {
       }
 
       @Override
-      void handler(Map<String, String> conf) {
+      public void handler(Map<String, String> conf) {
         Thread t = new Thread(() -> mHandler(conf));
         t.setDaemon(true);
         t.start();

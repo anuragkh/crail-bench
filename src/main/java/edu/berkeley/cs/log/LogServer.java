@@ -1,4 +1,4 @@
-package edu.berkeley.cs;
+package edu.berkeley.cs.log;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Set;
 
-class LogServer implements Runnable {
+public class LogServer implements Runnable {
 
   private static final String EOM = "CLOSE";
 
@@ -21,7 +21,7 @@ class LogServer implements Runnable {
   private ByteBuffer buffer;
   private int numConnections;
 
-  LogServer(int port, int numConnections) throws IOException {
+  public LogServer(int port, int numConnections) throws IOException {
     this.selector = Selector.open();
     this.serverSocket = ServerSocketChannel.open();
     this.serverSocket.bind(new InetSocketAddress("0.0.0.0", port));

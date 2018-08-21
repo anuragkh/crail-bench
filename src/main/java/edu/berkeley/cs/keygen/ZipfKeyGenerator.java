@@ -1,4 +1,4 @@
-package edu.berkeley.cs;
+package edu.berkeley.cs.keygen;
 
 import static java.lang.Math.pow;
 
@@ -7,7 +7,7 @@ public class ZipfKeyGenerator implements KeyGenerator {
   private int n;
   private double[] zDistribution;
 
-  ZipfKeyGenerator(double theta, int n) {
+  public ZipfKeyGenerator(double theta, int n) {
     this.n = n;
     this.zDistribution = new double[this.n];
 

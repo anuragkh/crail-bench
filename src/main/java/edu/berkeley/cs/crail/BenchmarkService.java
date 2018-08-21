@@ -1,9 +1,12 @@
-package edu.berkeley.cs;
+package edu.berkeley.cs.crail;
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.lambda.invoke.LambdaFunction;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import edu.berkeley.cs.keygen.KeyGenerator;
+import edu.berkeley.cs.keygen.SequentialKeyGenerator;
+import edu.berkeley.cs.keygen.ZipfKeyGenerator;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -11,7 +14,7 @@ import java.net.Socket;
 import java.util.Map;
 import java.util.Properties;
 
-class BenchmarkService {
+public class BenchmarkService {
 
   private static final int MAX_ERRORS = 1000;
   private static final String RESULT_BUCKET = "bench-results";
@@ -19,7 +22,7 @@ class BenchmarkService {
   private static final int BENCHMARK_WRITE = 2;
   private static final int BENCHMARK_DESTROY = 4;
 
-  class Logger implements Closeable {
+  public class Logger implements Closeable {
 
     private Socket socket;
     private PrintWriter out;
@@ -67,7 +70,7 @@ class BenchmarkService {
   }
 
   @LambdaFunction(functionName = "CrailBenchmark")
-  void handler(Map<String, String> conf) {
+  public void handler(Map<String, String> conf) {
     long startUs = nowUs();
 
     Properties props = new Properties();
