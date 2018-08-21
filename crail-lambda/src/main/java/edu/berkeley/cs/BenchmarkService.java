@@ -42,7 +42,7 @@ class BenchmarkService {
     }
 
     private void write(String data) {
-      this.out.write(data);
+      this.out.write(data + "\n");
       this.out.flush();
     }
 
