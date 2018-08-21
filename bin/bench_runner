@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Runs crail-benchmark
+
+bin="`dirname "$0"`"
+bin="`cd "$bin"; pwd`"
+
+. "$bin/config.sh"
+
+LIBEXEC_DIR="$CRAIL_HOME/libexec"
+JAVA=$JAVA_HOME/bin/java
+
+BENCH_JAR="$BENCH_PREFIX/bench-runner/target/bench-runner-1.0-SNAPSHOT-jar-with-dependencies.jar"
+
+export CLASSPATH="${BENCH_JAR}:${CRAIL_HOME}/jars/*:${CRAIL_HOME}/conf"
+export LD_LIBRARY_PATH="${CRAIL_HOME}/lib:${LD_LIBRARY_PATH}"
+
+exec ${JAVA} edu.berkeley.cs.Main $@

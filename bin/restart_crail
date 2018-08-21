@@ -1,0 +1,29 @@
+function waitpid() {
+  PID=$1
+  while [ -e /proc/$PID ]
+  do
+    sleep .6
+  done
+  echo "Process $PID has finished"
+}
+
+namenode_pid=`jps | grep "NameNode" | cut -d " " -f 1`
+
+if [ "$namenode_pid" != "" ]; then
+  echo "Killing NameNode with PID $namenode_pid"
+  kill -9 ${namenode_pid}
+  waitpid ${namenode_pid}
+fi
+
+datanode_pid=`jps | grep "StorageServer" | cut -d " " -f 1`
+if [ "$datanode_pid" != "" ]; then
+  echo "Killing StorageServer with PID $datanode_pid"
+  kill -9 ${datanode_pid}
+  waitpid ${datanode_pid}
+fi
+
+rm -rf /dev/hugepages/data/* /dev/hugepages/cache/*
+
+$CRAIL_HOME/bin/crail namenode 2>namenode.stderr 1>namenode.stdout &
+sleep 3
+$CRAIL_HOME/bin/crail datanode 2>datanode.stderr 1>datanode.stdout &
