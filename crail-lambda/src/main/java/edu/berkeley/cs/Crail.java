@@ -25,7 +25,6 @@ class Crail {
   private CrailStore mStore;
   private CrailBuffer mBuffer;
   private String mBasePath;
-  private int mObjectSize;
 
   private static CrailNodeType NODE_TYPE = CrailNodeType.DATAFILE;
   private static CrailStorageClass STORAGE_CLASS = CrailStorageClass.DEFAULT;
@@ -34,7 +33,7 @@ class Crail {
   void init(Properties conf) throws Exception {
     CrailConfiguration cConf = new CrailConfiguration();
     mStore = CrailStore.newInstance(cConf);
-    mObjectSize = Integer.parseInt(conf.getProperty("size", "1024"));
+    int mObjectSize = Integer.parseInt(conf.getProperty("size", "1024"));
     mBasePath = conf.getProperty("path", "/test");
 
     System.out.println("path: " + mBasePath + ", size: " + mObjectSize);
@@ -57,7 +56,6 @@ class Crail {
   void write(String key) {
     try {
       CrailFile f = createFile(mBasePath + "/" + key);
-      f.syncDir();
       mBuffer.clear();
       f.getDirectOutputStream(Integer.MAX_VALUE).write(mBuffer).get();
     } catch (Exception e) {
