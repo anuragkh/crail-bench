@@ -4,11 +4,13 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.concurrent.Future;
 import org.apache.crail.CrailBuffer;
 import org.apache.crail.CrailFile;
 import org.apache.crail.CrailInputStream;
 import org.apache.crail.CrailLocationClass;
 import org.apache.crail.CrailNodeType;
+import org.apache.crail.CrailResult;
 import org.apache.crail.CrailStorageClass;
 import org.apache.crail.CrailStore;
 import org.apache.crail.conf.CrailConfiguration;
@@ -62,7 +64,8 @@ class Crail {
       CrailFile f = lookup(mBasePath + "/" + key);
       CrailInputStream is = f.getDirectInputStream(f.getCapacity());
       mBuffer.clear();
-      is.read(mBuffer).get();
+      Future<CrailResult> result = is.read(mBuffer);
+      result.get();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
