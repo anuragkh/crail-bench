@@ -65,7 +65,6 @@ public class Main {
       service = LambdaInvokerFactory.builder()
           .lambdaClient(AWSLambdaClientBuilder.defaultClient())
           .build(BenchmarkService.class);
-
     } else if (command.equalsIgnoreCase("invoke-local")) {
       service = new BenchmarkService();
     } else {

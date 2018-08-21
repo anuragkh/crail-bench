@@ -11,11 +11,15 @@ import java.net.Socket;
 import java.util.Map;
 import java.util.Properties;
 
-public class BenchmarkService {
+class BenchmarkService {
   private static final int MAX_NUM_OPS = 1000;
   private static final int MAX_DATA_SIZE = 1073741824;
   private static final int MAX_ERRORS = 1000;
+  private static final int MAX_EXECUTION_TIME_US = 240 * 1000 * 1000;
   private static final String RESULT_BUCKET = "bench-results";
+  private static final int BENCHMARK_READ = 1;
+  private static final int BENCHMARK_WRITE = 2;
+  private static final int BENCHMARK_DESTROY = 4;
 
   class Logger implements Closeable {
     private Socket socket;
@@ -64,13 +68,38 @@ public class BenchmarkService {
   }
 
   @LambdaFunction(functionName = "CrailBenchmark")
-  public void handler(Map<String, String> conf) {
-    Properties properties = new Properties();
-    properties.putAll(conf);
+  void handler(Map<String, String> conf) {
+    long startUs = nowUs();
 
-    int objSize = Integer.parseInt(conf.getOrDefault("size", "1024"));
-    String host = properties.getProperty("logger_host");
-    int port = Integer.parseInt(properties.getProperty("logger_port"));
+    Properties props = new Properties();
+    props.putAll(conf);
+
+    String distribution = props.getProperty("distribution");
+    int size = Integer.parseInt(conf.getOrDefault("size", "1024"));
+    int nOps = numOps(size);
+    KeyGenerator kGen;
+    if (distribution.equalsIgnoreCase("zipf")) {
+      kGen = new ZipfKeyGenerator(0.0, nOps);
+    } else if (distribution.equalsIgnoreCase("sequential")) {
+      kGen = new SequentialKeyGenerator();
+    } else {
+      throw new RuntimeException("Unrecognized key distribution: " + distribution);
+    }
+    String modeStr = props.getProperty("mode");
+    int mode = 0;
+    if (modeStr.contains("read")) {
+      mode |= BENCHMARK_READ;
+    }
+    if (modeStr.contains("write")) {
+      mode |= BENCHMARK_WRITE;
+    }
+    if (modeStr.contains("destroy")) {
+      mode |= BENCHMARK_DESTROY;
+    }
+    boolean warmUp = Boolean.parseBoolean(props.getProperty("warm_up"));
+    long remaining = MAX_EXECUTION_TIME_US - (nowUs() - startUs);
+    String host = props.getProperty("logger_host");
+    int port = Integer.parseInt(props.getProperty("logger_port"));
 
     Logger log;
     try {
@@ -81,7 +110,7 @@ public class BenchmarkService {
     }
 
     try {
-      benchmark(new Crail(), objSize, numOps(objSize), properties, log);
+      benchmark(new Crail(), props, kGen, size, nOps, mode, warmUp, remaining, log);
     } catch (Exception e) {
       log.error(e.getMessage());
       e.printStackTrace(log.getPrintWriter());
@@ -95,83 +124,116 @@ public class BenchmarkService {
     }
   }
 
-  private static void benchmark(Crail c, int size, int nOps, Properties conf, Logger log)
+  private static void benchmark(Crail c, Properties conf, KeyGenerator keyGen,
+      int size, int nOps, int mode, boolean warmUp, long maxUs, Logger log)
       throws Exception {
     int errCount = 0;
-
-    StringBuilder lr = new StringBuilder();
-    StringBuilder lw = new StringBuilder();
-    StringBuilder tr = new StringBuilder();
-    StringBuilder tw = new StringBuilder();
+    int warmUpCount = nOps / 10;
+    long startUs = nowUs();
+    String outPrefix = "crail/crail_" + String.valueOf(size);
 
     log.info("Initializing storage interface...");
     c.init(conf);
 
-    log.info("Starting writes...");
-    long wBegin = nowUs();
-    for (int i = 0; i < nOps; ++i) {
-      long tBegin = nowUs();
-      try {
-        c.write(String.valueOf(i));
-      } catch (RuntimeException e) {
-        log.warn("WriteOp failed: ");
-        e.printStackTrace(log.getPrintWriter());
-        log.flush();
-        --i;
-        errCount++;
-        if (errCount > MAX_ERRORS) {
-          log.error("Too many errors");
-          System.exit(-1);
+    if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
+      StringBuilder lw = new StringBuilder();
+      StringBuilder tw = new StringBuilder();
+
+      if (warmUp) {
+        log.info("Warm-up writes...");
+        for (int i = 0; i < warmUpCount && timeBound(startUs, maxUs, log); ++i) {
+          try {
+            c.write(keyGen.next());
+          } catch (RuntimeException e) {
+            errCount++;
+            if (errCount > MAX_ERRORS) {
+              log.error("Too many errors");
+              System.exit(1);
+            }
+          }
         }
       }
-      long tEnd = nowUs();
-      lw.append(String.valueOf(tEnd - tBegin)).append("\n");
+
+      log.info("Starting writes...");
+      long wBegin = nowUs();
+      for (int i = 0; i < nOps && timeBound(startUs, maxUs, log); ++i) {
+        long tBegin = nowUs();
+        try {
+          c.write(keyGen.next());
+        } catch (RuntimeException e) {
+          --i;
+          errCount++;
+          if (errCount > MAX_ERRORS) {
+            log.error("Too many errors");
+            System.exit(1);
+          }
+        }
+        long tEnd = nowUs();
+        lw.append(String.valueOf(tEnd - tBegin)).append("\n");
+      }
+      long wEnd = nowUs();
+      log.info("Finished writes.");
+
+      double wElapsedS = ((double) (wEnd - wBegin)) / 1000000.0;
+      tw.append(String.valueOf(nOps / wElapsedS)).append("\n");
+
+      writeToS3(outPrefix + "_write_latency.txt", lw.toString(), log);
+      writeToS3(outPrefix + "_write_throughput.txt", tw.toString(), log);
     }
-    long wEnd = nowUs();
-    log.info("Finished writes, starting reads...");
+
     errCount = 0;
-    long rBegin = nowUs();
-    for (int i = 0; i < nOps; ++i) {
-      long tBegin = nowUs();
-      try {
-        String retValue = c.read(String.valueOf(i));
-        assert retValue.length() == size;
-      } catch (RuntimeException e) {
-        log.warn("ReadOp failed: ");
-        e.printStackTrace(log.getPrintWriter());
-        log.flush();
-        --i;
-        errCount++;
-        if (errCount > MAX_ERRORS) {
-          log.error("Too many errors");
-          System.exit(-1);
+    if ((mode & BENCHMARK_READ) == BENCHMARK_READ) {
+      StringBuilder lr = new StringBuilder();
+      StringBuilder tr = new StringBuilder();
+
+      if (warmUp) {
+        log.info("Warm-up reads...");
+        for (int i = 0; i < warmUpCount && timeBound(startUs, maxUs, log); ++i) {
+          try {
+            String retValue = c.read(keyGen.next());
+            assert retValue.length() == size;
+          } catch (RuntimeException e) {
+            errCount++;
+            if (errCount > MAX_ERRORS) {
+              log.error("Too many errors");
+              System.exit(-1);
+            }
+          }
         }
       }
-      long tEnd = nowUs();
-      lr.append(String.valueOf(tEnd - tBegin)).append("\n");
+
+      log.info("Starting reads...");
+      long rBegin = nowUs();
+      for (int i = 0; i < nOps && timeBound(startUs, maxUs, log); ++i) {
+        long tBegin = nowUs();
+        try {
+          String retValue = c.read(keyGen.next());
+          assert retValue.length() == size;
+        } catch (RuntimeException e) {
+          --i;
+          errCount++;
+          if (errCount > MAX_ERRORS) {
+            log.error("Too many errors");
+            System.exit(-1);
+          }
+        }
+        long tEnd = nowUs();
+        lr.append(String.valueOf(tEnd - tBegin)).append("\n");
+      }
+      long rEnd = nowUs();
+      log.info("Finished reads.");
+
+      double rElapsedS = ((double) (rEnd - rBegin)) / 1000000.0;
+      tr.append(String.valueOf(nOps / rElapsedS)).append("\n");
+
+      writeToS3(outPrefix + "_read_latency.txt", lr.toString(), log);
+      writeToS3(outPrefix + "_read_throughput.txt", tr.toString(), log);
     }
-    long rEnd = nowUs();
 
-    log.info("Finished benchmark.");
-    double wElapsedS = ((double) (wEnd - wBegin)) / 1000000.0;
-    double rElapsedS = ((double) (rEnd - rBegin)) / 1000000.0;
-    tw.append(String.valueOf(nOps / wElapsedS)).append("\n");
-    tr.append(String.valueOf(nOps / rElapsedS)).append("\n");
-
-    c.destroy();
-    log.info("Destroyed storage interface.");
-
-    String lrPath = "/tmp/crail_" + String.valueOf(size) + "_read_latency.txt";
-    String lwPath = "/tmp/crail_" + String.valueOf(size) + "_write_latency.txt";
-    String trPath = "/tmp/crail_" + String.valueOf(size) + "_read_throughput.txt";
-    String twPath = "/tmp/crail_" + String.valueOf(size) + "_write_throughput.txt";
-
-    writeToS3(lrPath, lr.toString(), log);
-    writeToS3(lwPath, lw.toString(), log);
-    writeToS3(trPath, tr.toString(), log);
-    writeToS3(twPath, tw.toString(), log);
-
-    log.info("Wrote all results to S3");
+    if ((mode & BENCHMARK_DESTROY) == BENCHMARK_DESTROY) {
+      c.destroy();
+      log.info("Destroyed storage interface.");
+    }
   }
 
   private static void writeToS3(String key, String value, Logger log) {
@@ -180,6 +242,13 @@ public class BenchmarkService {
         .build();
     s3Client.putObject(RESULT_BUCKET, key, value);
     log.info("Uploaded results to s3://" + RESULT_BUCKET + "/" + key);
+  }
+
+  private static boolean timeBound(long startUs, long maxUs, Logger log) {
+    if (nowUs() - startUs < maxUs)
+      return true;
+    log.warn("Benchmark timed out...");
+    return false;
   }
 
   private static long nowUs() {
