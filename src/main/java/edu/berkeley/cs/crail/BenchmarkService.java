@@ -140,8 +140,12 @@ public class BenchmarkService {
 
     if (System.getenv(CRAIL_HOME) == null) {
       String crailHome = System.getenv(LAMBDA_TASK_ROOT);
-      log.info("Setting environment variable CRAIL_HOME to " + crailHome);
-      injectEnvironmentVariable(CRAIL_HOME, crailHome);
+      if (crailHome != null) {
+        log.info("Setting environment variable CRAIL_HOME to " + crailHome);
+        injectEnvironmentVariable(CRAIL_HOME, crailHome);
+      } else {
+        log.warn("CRAIL_HOME is not set, may not load appropriate configuration variables");
+      }
     }
 
     log.info("Initializing storage interface...");
