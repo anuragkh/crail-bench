@@ -6,7 +6,7 @@
 
   <groupId>riselab</groupId>
   <artifactId>crail-bench</artifactId>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
 
   <developers>
@@ -36,6 +36,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <crail.version>1.0</crail.version>
     <aws.version>1.11.327</aws.version>
+    <ini4j.version>0.5.4</ini4j.version>
   </properties>
 
   <dependencyManagement>
@@ -67,7 +68,7 @@
     <dependency>
       <groupId>org.ini4j</groupId>
       <artifactId>ini4j</artifactId>
-      <version>0.5.4</version>
+      <version>${ini4j.version}</version>
     </dependency>
   </dependencies>
 
