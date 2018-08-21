@@ -147,11 +147,7 @@ class BenchmarkService {
           try {
             c.write(keyGen.next());
           } catch (RuntimeException e) {
-            errCount++;
-            if (errCount > MAX_ERRORS) {
-              log.error("Too many errors");
-              System.exit(1);
-            }
+            handleError(log, ++errCount, e);
           }
         }
       }
@@ -164,11 +160,7 @@ class BenchmarkService {
           c.write(keyGen.next());
         } catch (RuntimeException e) {
           --i;
-          errCount++;
-          if (errCount > MAX_ERRORS) {
-            log.error("Too many errors");
-            System.exit(1);
-          }
+          handleError(log, ++errCount, e);
         }
         long tEnd = nowUs();
         lw.append(String.valueOf(tEnd - tBegin)).append("\n");
@@ -195,11 +187,7 @@ class BenchmarkService {
             String retValue = c.read(keyGen.next());
             assert retValue.length() == size;
           } catch (RuntimeException e) {
-            errCount++;
-            if (errCount > MAX_ERRORS) {
-              log.error("Too many errors");
-              System.exit(-1);
-            }
+            handleError(log, ++errCount, e);
           }
         }
       }
@@ -213,11 +201,7 @@ class BenchmarkService {
           assert retValue.length() == size;
         } catch (RuntimeException e) {
           --i;
-          errCount++;
-          if (errCount > MAX_ERRORS) {
-            log.error("Too many errors");
-            System.exit(-1);
-          }
+          handleError(log, ++errCount, e);
         }
         long tEnd = nowUs();
         lr.append(String.valueOf(tEnd - tBegin)).append("\n");
@@ -235,6 +219,15 @@ class BenchmarkService {
     if ((mode & BENCHMARK_DESTROY) == BENCHMARK_DESTROY) {
       c.destroy();
       log.info("Destroyed storage interface.");
+    }
+  }
+
+  private static void handleError(Logger log, int errCount, RuntimeException e) {
+    if (errCount > MAX_ERRORS) {
+      log.error("Too many errors; last error:");
+      e.printStackTrace(log.getPrintWriter());
+      log.flush();
+      System.exit(1);
     }
   }
 
