@@ -59,7 +59,8 @@ class Crail {
       CrailFile f = createFile(mBasePath + "/" + key);
       mBuffer.clear();
       CrailOutputStream out = f.getDirectOutputStream(Integer.MAX_VALUE);
-      out.write(mBuffer).get();
+      long len = out.write(mBuffer).get().getLen();
+      assert len == mBuffer.capacity();
       out.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
