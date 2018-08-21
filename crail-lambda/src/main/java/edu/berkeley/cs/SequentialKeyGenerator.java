@@ -11,4 +11,9 @@ public class SequentialKeyGenerator implements KeyGenerator {
   public String next() {
     return String.valueOf(currentKey++);
   }
+
+  @Override
+  public void reset() {
+    currentKey = 0;
+  }
 }

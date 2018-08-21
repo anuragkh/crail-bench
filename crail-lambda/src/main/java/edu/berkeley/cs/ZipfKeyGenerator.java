@@ -46,4 +46,9 @@ public class ZipfKeyGenerator implements KeyGenerator {
     }
     return String.valueOf(lo);
   }
+
+  @Override
+  public void reset() {
+    // Do nothing
+  }
 }

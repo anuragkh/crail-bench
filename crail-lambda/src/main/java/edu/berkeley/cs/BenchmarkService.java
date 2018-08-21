@@ -13,8 +13,6 @@ import java.util.Properties;
 
 class BenchmarkService {
 
-  private static final int MAX_NUM_OPS = 1000;
-  private static final int MAX_DATA_SIZE = 1073741824;
   private static final int MAX_ERRORS = 1000;
   private static final String RESULT_BUCKET = "bench-results";
   private static final int BENCHMARK_READ = 1;
@@ -77,7 +75,7 @@ class BenchmarkService {
 
     String distribution = conf.getOrDefault("distribution", "sequential");
     int size = Integer.parseInt(conf.getOrDefault("size", "1024"));
-    int nOps = Integer.parseInt(conf.getOrDefault("num_ops", numOps(size)));
+    int nOps = Integer.parseInt(conf.getOrDefault("num_ops", "1000"));
     KeyGenerator kGen;
     if (distribution.equalsIgnoreCase("zipf")) {
       kGen = new ZipfKeyGenerator(0.0, nOps);
@@ -176,6 +174,7 @@ class BenchmarkService {
     }
 
     errCount = 0;
+    keyGen.reset();
     if ((mode & BENCHMARK_READ) == BENCHMARK_READ) {
       StringBuilder lr = new StringBuilder();
       StringBuilder tr = new StringBuilder();
@@ -251,7 +250,4 @@ class BenchmarkService {
     return System.nanoTime() / 1000;
   }
 
-  private String numOps(int objSize) {
-    return String.valueOf(Math.min(MAX_NUM_OPS, MAX_DATA_SIZE / objSize));
-  }
 }
