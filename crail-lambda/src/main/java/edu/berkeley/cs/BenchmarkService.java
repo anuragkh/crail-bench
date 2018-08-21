@@ -133,7 +133,7 @@ class BenchmarkService {
     String outPrefix = "crail/crail_" + String.valueOf(size);
 
     log.info("Initializing storage interface...");
-    c.init(conf);
+    c.init(conf, log);
 
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
       StringBuilder lw = new StringBuilder();

@@ -1,5 +1,6 @@
 package edu.berkeley.cs;
 
+import edu.berkeley.cs.BenchmarkService.Logger;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -23,13 +24,13 @@ class Crail implements Closeable {
   private CrailBuffer mBuffer;
   private String mBasePath;
 
-  void init(Properties conf) throws Exception {
+  void init(Properties conf, Logger log) throws Exception {
     CrailConfiguration cConf = new CrailConfiguration();
     mStore = CrailStore.newInstance(cConf);
     int mObjectSize = Integer.parseInt(conf.getProperty("size", "1024"));
     mBasePath = conf.getProperty("path", "/test");
 
-    System.out.println("path: " + mBasePath + ", size: " + mObjectSize);
+    log.info("Initializing Crail with path: " + mBasePath + ", size: " + mObjectSize);
 
     if (mObjectSize == CrailConstants.BUFFER_SIZE) {
       mBuffer = mStore.allocateBuffer();
@@ -41,12 +42,12 @@ class Crail implements Closeable {
       mBuffer = OffHeapBuffer.wrap(ByteBuffer.allocateDirect(mObjectSize));
     }
 
-    System.out.println("Buffer size: " + mBuffer.capacity());
+    log.info("Buffer size: " + mBuffer.capacity());
 
     if (!createBasePath()) {
-      System.out.println("Path already exists: " + mBasePath);
+      log.warn("Path already exists: " + mBasePath);
     } else {
-      System.out.println("Path created: " + mBasePath);
+      log.info("Path created: " + mBasePath);
     }
   }
 
