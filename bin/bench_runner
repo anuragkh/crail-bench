@@ -10,7 +10,7 @@ bin="`cd "$bin"; pwd`"
 LIBEXEC_DIR="$CRAIL_HOME/libexec"
 JAVA=$JAVA_HOME/bin/java
 
-BENCH_JAR="$BENCH_PREFIX/bench-runner/target/bench-runner-1.0-SNAPSHOT-jar-with-dependencies.jar"
+BENCH_JAR="$BENCH_PREFIX/target/crail-bench-1.0-SNAPSHOT-jar-with-dependencies.jar"
 
 export CLASSPATH="${BENCH_JAR}:${CRAIL_HOME}/jars/*:${CRAIL_HOME}/conf"
 export LD_LIBRARY_PATH="${CRAIL_HOME}/lib:${LD_LIBRARY_PATH}"
