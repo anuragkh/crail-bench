@@ -3,7 +3,8 @@ package edu.berkeley.cs;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.invoke.LambdaInvokerFactory;
 import edu.berkeley.cs.crail.CrailBenchmarkService;
-import edu.berkeley.cs.log.LogServer;
+import edu.berkeley.cs.server.LogServer;
+import edu.berkeley.cs.server.ResultServer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -34,8 +35,11 @@ public class Main {
     String command = args[0];
     String iniFile = args[1];
 
-    Thread serverThread = new Thread(new LogServer(8888, 1));
-    serverThread.start();
+    Thread logThread = new Thread(new LogServer(8888, 1));
+    logThread.start();
+
+    Thread resultThread = new Thread(new ResultServer(8889, 1));
+    resultThread.start();
 
     Ini ini = new Ini();
     ini.load(new File(iniFile));
@@ -54,6 +58,7 @@ public class Main {
     assert service != null;
     service.handler(conf);
 
-    serverThread.join();
+    logThread.join();
+    resultThread.join();
   }
 }

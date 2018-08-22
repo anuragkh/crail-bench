@@ -1,21 +1,10 @@
 package edu.berkeley.cs.crail;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.SdkClientException;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
 import edu.berkeley.cs.BenchmarkService;
 import edu.berkeley.cs.keygen.KeyGenerator;
 import edu.berkeley.cs.keygen.SequentialKeyGenerator;
 import edu.berkeley.cs.keygen.ZipfKeyGenerator;
-import java.io.BufferedWriter;
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
@@ -26,7 +15,6 @@ import java.util.Properties;
 public class CrailBenchmarkService implements BenchmarkService {
 
   private static final int MAX_ERRORS = 1000;
-  private static final String RESULT_BUCKET = "bench-results";
   private static final int BENCHMARK_READ = 1;
   private static final int BENCHMARK_WRITE = 2;
   private static final int BENCHMARK_DESTROY = 4;
@@ -80,6 +68,33 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
   }
 
+  public class ResultWriter implements Closeable {
+
+    private static final String EOF = "::";
+    private static final String EOM = "::::";
+
+    private Socket socket;
+    private PrintWriter out;
+
+    ResultWriter(String host, int port) throws IOException {
+      this.socket = new Socket(host, port);
+      this.out = new PrintWriter(socket.getOutputStream(), true);
+    }
+
+    void writeResult(String fileName, String data) {
+      this.out.write(fileName + "\n");
+      this.out.write(data);
+      this.out.write("\n" + EOF + "\n");
+      this.out.flush();
+    }
+
+    @Override
+    public void close() {
+      this.out.write("\n" + EOM + "\n");
+      this.out.close();
+    }
+  }
+
   public void handler(Map<String, String> conf) {
     long startUs = nowUs();
 
@@ -111,19 +126,28 @@ public class CrailBenchmarkService implements BenchmarkService {
     boolean warmUp = Boolean.parseBoolean(conf.getOrDefault("warm_up", "true"));
     long timeoutUs = Long.parseLong(conf.getOrDefault("timeout", "240")) * 1000 * 1000;
     long remaining = timeoutUs - (nowUs() - startUs);
-    String host = conf.getOrDefault("logger_host", "localhost");
-    int port = Integer.parseInt(conf.getOrDefault("logger_port", "8888"));
+    String host = conf.getOrDefault("host", "localhost");
+    int logPort = Integer.parseInt(conf.getOrDefault("logger_port", "8888"));
+    int resultPort = Integer.parseInt(conf.getOrDefault("result_port", "8889"));
 
     Logger log;
     try {
-      log = new Logger(host, port);
+      log = new Logger(host, logPort);
+    } catch (IOException e) {
+      e.printStackTrace();
+      return;
+    }
+
+    ResultWriter rw;
+    try {
+      rw = new ResultWriter(host, resultPort);
     } catch (IOException e) {
       e.printStackTrace();
       return;
     }
 
     try {
-      benchmark(new Crail(), props, kGen, size, nOps, mode, warmUp, remaining, log);
+      benchmark(new Crail(), props, kGen, size, nOps, mode, warmUp, remaining, log, rw);
     } catch (Exception e) {
       log.error(e.getMessage());
       e.printStackTrace(log.getPrintWriter());
@@ -137,8 +161,8 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
   }
 
-  private static void benchmark(Crail c, Properties conf, KeyGenerator keyGen,
-      int size, int nOps, int mode, boolean warmUp, long maxUs, Logger log)
+  private static void benchmark(Crail c, Properties conf, KeyGenerator keyGen, int size, int nOps,
+      int mode, boolean warmUp, long maxUs, Logger log, ResultWriter rw)
       throws Exception {
     int errCount = 0;
     int warmUpCount = nOps / 10;
@@ -192,8 +216,8 @@ public class CrailBenchmarkService implements BenchmarkService {
       double wElapsedS = ((double) (wEnd - wBegin)) / 1000000.0;
       tw.append(String.valueOf(nOps / wElapsedS)).append("\n");
 
-      writeToS3(outPrefix + "_write_latency.txt", lw.toString(), log);
-      writeToS3(outPrefix + "_write_throughput.txt", tw.toString(), log);
+      rw.writeResult(outPrefix + "_write_latency.txt", lw.toString());
+      rw.writeResult(outPrefix + "_write_throughput.txt", tw.toString());
     }
 
     errCount = 0;
@@ -234,8 +258,8 @@ public class CrailBenchmarkService implements BenchmarkService {
       double rElapsedS = ((double) (rEnd - rBegin)) / 1000000.0;
       tr.append(String.valueOf(nOps / rElapsedS)).append("\n");
 
-      writeToS3(outPrefix + "_read_latency.txt", lr.toString(), log);
-      writeToS3(outPrefix + "_read_throughput.txt", tr.toString(), log);
+      rw.writeResult(outPrefix + "_read_latency.txt", lr.toString());
+      rw.writeResult(outPrefix + "_read_throughput.txt", tr.toString());
     }
 
     if ((mode & BENCHMARK_DESTROY) == BENCHMARK_DESTROY) {
@@ -253,29 +277,6 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
   }
 
-  private static void writeToS3(String key, String value, Logger log) {
-    try {
-      // Write to local path
-      BufferedWriter writer = new BufferedWriter(new FileWriter("/tmp/" + key));
-      writer.write(value);
-      writer.close();
-
-      AmazonS3 s3Client = AmazonS3ClientBuilder.standard().build();
-
-      PutObjectRequest request = new PutObjectRequest(RESULT_BUCKET, key, new File("/tmp/" + key));
-      ObjectMetadata meta = new ObjectMetadata();
-      meta.setContentType("plain/text");
-
-      request.setMetadata(meta);
-      s3Client.putObject(request);
-
-      log.info("Uploaded results " + key + " to s3://" + RESULT_BUCKET + "/" + key);
-    } catch (Exception e) {
-      e.printStackTrace(log.getPrintWriter());
-      log.flush();
-    }
-  }
-
   private static boolean timeBound(long startUs, long maxUs, Logger log) {
     if (nowUs() - startUs < maxUs) {
       return true;
@@ -288,9 +289,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     return System.nanoTime() / 1000;
   }
 
-  private static void injectEnvironmentVariable(String key, String value)
-      throws Exception {
-
+  private static void injectEnvironmentVariable(String key, String value) throws Exception {
     Class<?> processEnvironment = Class.forName("java.lang.ProcessEnvironment");
 
     Field unmodifiableMapField = getAccessibleField(processEnvironment,

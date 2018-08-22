@@ -1,4 +1,4 @@
-package edu.berkeley.cs.log;
+package edu.berkeley.cs.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
