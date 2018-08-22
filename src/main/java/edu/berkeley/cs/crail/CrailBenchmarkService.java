@@ -1,6 +1,7 @@
 package edu.berkeley.cs.crail;
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import edu.berkeley.cs.BenchmarkService;
@@ -247,7 +248,7 @@ public class CrailBenchmarkService implements BenchmarkService {
 
   private static void writeToS3(String key, String value, Logger log) {
     AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-        .withCredentials(new ProfileCredentialsProvider())
+        .withRegion(Regions.US_EAST_1)
         .build();
     s3Client.putObject(RESULT_BUCKET, key, value);
     log.info("Uploaded results to s3://" + RESULT_BUCKET + "/" + key);

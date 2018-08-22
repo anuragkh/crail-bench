@@ -18,6 +18,7 @@
 crail-lambda/target/
 bench-runner/target/
 target/
+build/
 
 # vim tmps
 .*sw*
