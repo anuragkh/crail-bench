@@ -255,12 +255,12 @@ public class CrailBenchmarkService implements BenchmarkService {
 
   private static void writeToS3(String key, String value, Logger log) {
     try {
-      AmazonS3 s3Client = AmazonS3ClientBuilder.standard().build();
-
       // Write to local path
       BufferedWriter writer = new BufferedWriter(new FileWriter("/tmp/" + key));
       writer.write(value);
       writer.close();
+
+      AmazonS3 s3Client = AmazonS3ClientBuilder.standard().build();
 
       PutObjectRequest request = new PutObjectRequest(RESULT_BUCKET, key, new File("/tmp/" + key));
       ObjectMetadata meta = new ObjectMetadata();
