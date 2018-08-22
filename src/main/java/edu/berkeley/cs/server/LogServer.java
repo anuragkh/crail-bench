@@ -54,6 +54,7 @@ public class LogServer implements Runnable {
             SocketChannel client = serverSocket.accept();
             client.configureBlocking(false);
             client.register(selector, SelectionKey.OP_READ);
+            System.out.println("Received connection from " + client.getRemoteAddress());
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
             client.read(buffer);
@@ -71,10 +72,9 @@ public class LogServer implements Runnable {
               client.close();
             } else if (msgBuf.contains("LAMBDA_ID:")) {
               String id = msgBuf.replace("LAMBDA_ID:", "");
-              System.out.println("Received connection from " + client.getRemoteAddress() + " with ID=[" + id + "]");
+              System.out.println("Initializing " + client.getRemoteAddress() + ", ID=[" + id + "]");
               buffer.clear();
               if (ids.contains(id)) {
-                System.out.println("Aborting " + client.getRemoteAddress() + ": Duplicate function");
                 buffer.put("ABORT\n".getBytes());
               } else {
                 ids.add(id);

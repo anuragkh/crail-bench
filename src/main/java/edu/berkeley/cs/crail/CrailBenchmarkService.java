@@ -122,6 +122,7 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     Properties props = new Properties();
     props.putAll(conf);
+    System.out.println("Properties: " + props.toString());
 
     String distribution = conf.getOrDefault("distribution", "sequential");
     int size = Integer.parseInt(conf.getOrDefault("size", "1024"));
