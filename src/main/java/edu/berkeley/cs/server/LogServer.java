@@ -55,6 +55,7 @@ public class LogServer implements Runnable {
             client.read(buffer);
             buffer.flip();
             String id = StandardCharsets.UTF_8.decode(buffer).toString().trim();
+            buffer.clear();
             if (ids.contains(id)) {
               buffer.put("ABORT".getBytes());
               client.close();
