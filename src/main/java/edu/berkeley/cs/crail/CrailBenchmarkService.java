@@ -71,7 +71,7 @@ public class CrailBenchmarkService implements BenchmarkService {
   public class ResultWriter implements Closeable {
 
     private static final String EOF = "::";
-    private static final String EOM = "::::";
+    private static final String EOC = "::::";
 
     private Socket socket;
     private PrintWriter out;
@@ -90,7 +90,7 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     @Override
     public void close() {
-      this.out.write(EOM + "\n");
+      this.out.write(EOC + "\n");
       this.out.close();
     }
   }
@@ -156,6 +156,7 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     try {
       log.close();
+      rw.close();
     } catch (IOException e) {
       e.printStackTrace();
     }

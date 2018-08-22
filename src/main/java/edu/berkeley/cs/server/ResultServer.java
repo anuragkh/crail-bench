@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ResultServer implements Runnable, Closeable {
   private static final String EOF = "::";
-  private static final String EOM = "::::";
+  private static final String EOC = "::::";
 
   private ServerSocket serverSocket;
   private AtomicInteger numClosed;
@@ -33,7 +33,7 @@ public class ResultServer implements Runnable, Closeable {
           try {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String fileName;
-            while (!(fileName = in.readLine()).equals(EOM)) {
+            while (!(fileName = in.readLine()).equals(EOC)) {
               PrintWriter out = new PrintWriter(new FileWriter(fileName));
               String line;
               while (!(line = in.readLine()).equals(EOF)) {
