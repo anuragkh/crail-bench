@@ -167,7 +167,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
 
     try {
-      benchmark(new Crail(), props, kGen, size, nOps, mode, warmUp, remaining, log, rw);
+      benchmark(id, new Crail(), props, kGen, size, nOps, mode, warmUp, remaining, log, rw);
     } catch (Exception e) {
       log.error(e.getMessage());
       e.printStackTrace(log.getPrintWriter());
@@ -182,22 +182,28 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
   }
 
-  private static void benchmark(Crail c, Properties conf, KeyGenerator keyGen, int size, int nOps,
-      int mode, boolean warmUp, long maxUs, Logger log, ResultWriter rw)
+  private static void benchmark(String id, Crail c, Properties conf, KeyGenerator keyGen,
+      int size, int nOps, int mode, boolean warmUp, long maxUs, Logger log, ResultWriter rw)
       throws Exception {
+
+    log.info("Running benchmark for function ID=[" + id + "]");
+
     int errCount = 0;
     int warmUpCount = nOps / 10;
     long startUs = nowUs();
     String outPrefix = "crail_" + String.valueOf(size);
 
-    if (System.getenv(CRAIL_HOME) == null) {
-      String crailHome = System.getenv(LAMBDA_TASK_ROOT);
+    String crailHome;
+    if ((crailHome = System.getenv(CRAIL_HOME)) == null) {
+      crailHome = System.getenv(LAMBDA_TASK_ROOT);
       if (crailHome != null) {
         log.info("Setting environment variable CRAIL_HOME to " + crailHome);
         injectEnvironmentVariable(CRAIL_HOME, crailHome);
       } else {
         log.warn("CRAIL_HOME is not set, may not load appropriate configuration variables");
       }
+    } else {
+      log.info("CRAIL_HOME is already set to " + crailHome);
     }
 
     log.info("Initializing storage interface...");
