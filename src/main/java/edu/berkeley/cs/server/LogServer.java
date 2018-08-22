@@ -16,6 +16,7 @@ import java.util.Set;
 public class LogServer implements Runnable {
 
   private static final String EOM = "CLOSE";
+  private static final String ABORT = "ABORT";
 
   private Selector selector;
   private ServerSocketChannel serverSocket;
@@ -52,18 +53,18 @@ public class LogServer implements Runnable {
           if (key.isAcceptable()) {
             SocketChannel client = serverSocket.accept();
             client.configureBlocking(false);
+            client.register(selector, SelectionKey.OP_READ);
+
             client.read(buffer);
             buffer.flip();
             String id = StandardCharsets.UTF_8.decode(buffer).toString().trim();
             buffer.clear();
             if (ids.contains(id)) {
-              System.out.println("Killing " + client.getRemoteAddress() + ": Duplicate function");
+              System.out.println("Aborting " + client.getRemoteAddress() + ": Duplicate function");
               buffer.put("ABORT\n".getBytes());
-              client.close();
             } else {
               buffer.put("OK\n".getBytes());
               ids.add(id);
-              client.register(selector, SelectionKey.OP_READ);
             }
             buffer.flip();
             client.write(buffer);
@@ -80,6 +81,9 @@ public class LogServer implements Runnable {
               if (numClosed == numConnections) {
                 serverSocket.close();
               }
+            } else if (msgBuf.contains(ABORT)) {
+              printMessages(client.getRemoteAddress(), msgBuf.replace(EOM, "Aborted execution"));
+              client.close();
             } else {
               printMessages(client.getRemoteAddress(), msgBuf);
             }

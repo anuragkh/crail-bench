@@ -38,7 +38,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     void init(String id) throws IOException {
       write(id);
       String response = in.readLine();
-      if (response.equalsIgnoreCase("CLOSE")) {
+      if (response.equalsIgnoreCase("ABORT")) {
         write("ABORT");
         this.socket.shutdownInput();
         this.socket.shutdownOutput();
@@ -289,11 +289,12 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
   }
 
-  private static void handleError(Logger log, int errCount, RuntimeException e) {
+  private static void handleError(Logger log, int errCount, RuntimeException e) throws IOException {
     if (errCount > MAX_ERRORS) {
       log.error("Too many errors; last error:");
       e.printStackTrace(log.getPrintWriter());
       log.flush();
+      log.close();
       System.exit(1);
     }
   }
