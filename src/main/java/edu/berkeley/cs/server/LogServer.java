@@ -59,11 +59,11 @@ public class LogServer implements Runnable {
             System.out.println("Received ID=" + id);
             if (ids.contains(id)) {
               System.out.println("ID already exists, terminating connection...");
-              buffer.put("ABORT".getBytes());
+              buffer.put("ABORT\n".getBytes());
               client.close();
             } else {
               System.out.println("ID does not exist, registering connection...");
-              buffer.put("OK".getBytes());
+              buffer.put("OK\n".getBytes());
               ids.add(id);
               client.register(selector, SelectionKey.OP_READ);
             }
