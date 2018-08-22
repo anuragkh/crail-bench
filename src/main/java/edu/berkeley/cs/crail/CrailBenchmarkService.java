@@ -36,8 +36,11 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
 
     void init(String id) throws IOException {
+      System.out.println("Initializing with id " + id);
       write(id);
+      System.out.println("Waiting for response...");
       String response = in.readLine();
+      System.out.println("Response: " + response);
       if (response.equalsIgnoreCase("CLOSE")) {
         write("ABORT");
         this.socket.shutdownInput();
