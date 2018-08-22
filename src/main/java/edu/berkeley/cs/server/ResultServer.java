@@ -36,7 +36,7 @@ public class ResultServer implements Runnable {
               PrintWriter out = new PrintWriter(new FileWriter(fileName));
               String line;
               while (!(line = in.readLine()).equals(EOF)) {
-                out.write(line);
+                out.write(line + "\n");
               }
               out.close();
             }
