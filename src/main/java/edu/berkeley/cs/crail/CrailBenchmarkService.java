@@ -35,17 +35,21 @@ public class CrailBenchmarkService implements BenchmarkService {
       this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     }
 
-    void init(String id) throws IOException {
+    boolean init(String id) {
       write("LAMBDA_ID:" + id);
-      String response = in.readLine();
-      if (response.equalsIgnoreCase("ABORT")) {
-        write("ABORT");
-        this.socket.shutdownInput();
-        this.socket.shutdownOutput();
-        this.socket.close();
-        System.exit(1);
-      } else if (!response.equals("OK")) {
-        throw new RuntimeException("Unexpected response from server: " + response);
+      try {
+        String response = in.readLine();
+        if (response.equalsIgnoreCase("ABORT")) {
+          write("ABORT");
+          this.socket.shutdownInput();
+          this.socket.shutdownOutput();
+          this.socket.close();
+          return false;
+        } else {
+          return response.equals("OK");
+        }
+      } catch (IOException e) {
+        return false;
       }
     }
 
@@ -152,9 +156,12 @@ public class CrailBenchmarkService implements BenchmarkService {
     Logger log;
     try {
       log = new Logger(host, logPort);
-      log.init(id);
     } catch (IOException e) {
       e.printStackTrace();
+      return;
+    }
+
+    if (!log.init(id)) {
       return;
     }
 
