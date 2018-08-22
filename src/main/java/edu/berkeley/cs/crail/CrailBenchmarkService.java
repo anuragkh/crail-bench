@@ -1,14 +1,21 @@
 package edu.berkeley.cs.crail;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import edu.berkeley.cs.BenchmarkService;
 import edu.berkeley.cs.keygen.KeyGenerator;
 import edu.berkeley.cs.keygen.SequentialKeyGenerator;
 import edu.berkeley.cs.keygen.ZipfKeyGenerator;
+import java.io.BufferedWriter;
 import java.io.Closeable;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
@@ -136,7 +143,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     int errCount = 0;
     int warmUpCount = nOps / 10;
     long startUs = nowUs();
-    String outPrefix = "crail/crail_" + String.valueOf(size);
+    String outPrefix = "crail_" + String.valueOf(size);
 
     if (System.getenv(CRAIL_HOME) == null) {
       String crailHome = System.getenv(LAMBDA_TASK_ROOT);
@@ -247,11 +254,26 @@ public class CrailBenchmarkService implements BenchmarkService {
   }
 
   private static void writeToS3(String key, String value, Logger log) {
-    AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-        .withRegion(Regions.US_EAST_1)
-        .build();
-    s3Client.putObject(RESULT_BUCKET, key, value);
-    log.info("Uploaded results to s3://" + RESULT_BUCKET + "/" + key);
+    try {
+      AmazonS3 s3Client = AmazonS3ClientBuilder.standard().build();
+
+      // Write to local path
+      BufferedWriter writer = new BufferedWriter(new FileWriter("/tmp/" + key));
+      writer.write(value);
+      writer.close();
+
+      PutObjectRequest request = new PutObjectRequest(RESULT_BUCKET, key, new File("/tmp/" + key));
+      ObjectMetadata meta = new ObjectMetadata();
+      meta.setContentType("plain/text");
+
+      request.setMetadata(meta);
+      s3Client.putObject(request);
+
+      log.info("Uploaded results " + key + " to s3://" + RESULT_BUCKET + "/" + key);
+    } catch(SdkClientException | IOException e) {
+      e.printStackTrace(log.getPrintWriter());
+      log.flush();
+    }
   }
 
   private static boolean timeBound(long startUs, long maxUs, Logger log) {
