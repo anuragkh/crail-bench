@@ -56,14 +56,18 @@ public class LogServer implements Runnable {
             buffer.flip();
             String id = StandardCharsets.UTF_8.decode(buffer).toString().trim();
             buffer.clear();
+            System.out.println("Received ID=" + id);
             if (ids.contains(id)) {
+              System.out.println("ID already exists, terminating connection...");
               buffer.put("ABORT".getBytes());
               client.close();
             } else {
+              System.out.println("ID does not exist, registering connection...");
               buffer.put("OK".getBytes());
               ids.add(id);
               client.register(selector, SelectionKey.OP_READ);
             }
+            System.out.println("Writing buffer...");
             buffer.flip();
             client.write(buffer);
             buffer.clear();
