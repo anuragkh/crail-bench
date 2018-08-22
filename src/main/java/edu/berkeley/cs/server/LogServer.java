@@ -59,12 +59,13 @@ public class LogServer implements Runnable {
             buffer.flip();
             String id = StandardCharsets.UTF_8.decode(buffer).toString().trim();
             buffer.clear();
+            System.out.println("Received connection from " + client.getRemoteAddress() + " with ID=[" + id + "]");
             if (ids.contains(id)) {
               System.out.println("Aborting " + client.getRemoteAddress() + ": Duplicate function");
               buffer.put("ABORT\n".getBytes());
             } else {
-              buffer.put("OK\n".getBytes());
               ids.add(id);
+              buffer.put("OK\n".getBytes());
             }
             buffer.flip();
             client.write(buffer);
