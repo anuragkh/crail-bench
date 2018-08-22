@@ -67,10 +67,11 @@ public class LogServer implements Runnable {
               ids.add(id);
               client.register(selector, SelectionKey.OP_READ);
             }
-            System.out.println("Writing buffer...");
             buffer.flip();
+            System.out.println("Writing buffer...");
             client.write(buffer);
             buffer.clear();
+            System.out.println("Wrote buffer...");
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
             client.read(buffer);
