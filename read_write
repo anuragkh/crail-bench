@@ -1,0 +1,5 @@
+echo "Restarting Crail..."
+./bin/restart_crail
+sleep 3
+echo "Running benchmark with conf $1"
+./bin/bench_runner invoke $1 2>&1 | tee log
