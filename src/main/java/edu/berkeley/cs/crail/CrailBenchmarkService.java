@@ -4,8 +4,10 @@ import edu.berkeley.cs.BenchmarkService;
 import edu.berkeley.cs.keygen.KeyGenerator;
 import edu.berkeley.cs.keygen.SequentialKeyGenerator;
 import edu.berkeley.cs.keygen.ZipfKeyGenerator;
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.net.Socket;
@@ -25,10 +27,26 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     private Socket socket;
     private PrintWriter out;
+    private BufferedReader in;
 
     Logger(String host, int port) throws IOException {
       this.socket = new Socket(host, port);
       this.out = new PrintWriter(socket.getOutputStream(), true);
+      this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    }
+
+    void init(String id) throws IOException {
+      write(id);
+      String response = in.readLine();
+      if (response.equalsIgnoreCase("CLOSE")) {
+        write("ABORT");
+        this.socket.shutdownInput();
+        this.socket.shutdownOutput();
+        this.socket.close();
+        System.exit(1);
+      } else if (!response.equals("OK")) {
+        throw new RuntimeException("Unexpected response from server: " + response);
+      }
     }
 
     void info(String msg) {
@@ -129,10 +147,12 @@ public class CrailBenchmarkService implements BenchmarkService {
     String host = conf.getOrDefault("host", "localhost");
     int logPort = Integer.parseInt(conf.getOrDefault("logger_port", "8888"));
     int resultPort = Integer.parseInt(conf.getOrDefault("result_port", "8889"));
+    String id = conf.getOrDefault("lambda_id", "0");
 
     Logger log;
     try {
       log = new Logger(host, logPort);
+      log.init(id);
     } catch (IOException e) {
       e.printStackTrace();
       return;

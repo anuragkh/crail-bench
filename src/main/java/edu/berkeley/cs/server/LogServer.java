@@ -9,6 +9,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -20,6 +21,7 @@ public class LogServer implements Runnable {
   private ServerSocketChannel serverSocket;
   private ByteBuffer buffer;
   private int numConnections;
+  private Set<String> ids;
 
   public LogServer(int port, int numConnections) throws IOException {
     this.selector = Selector.open();
@@ -29,6 +31,7 @@ public class LogServer implements Runnable {
     this.serverSocket.register(selector, SelectionKey.OP_ACCEPT);
     this.buffer = ByteBuffer.allocate(4096);
     this.numConnections = numConnections;
+    this.ids = new HashSet<>();
   }
 
   @Override
@@ -49,7 +52,20 @@ public class LogServer implements Runnable {
           if (key.isAcceptable()) {
             SocketChannel client = serverSocket.accept();
             client.configureBlocking(false);
-            client.register(selector, SelectionKey.OP_READ);
+            client.read(buffer);
+            buffer.flip();
+            String id = StandardCharsets.UTF_8.decode(buffer).toString().trim();
+            if (ids.contains(id)) {
+              buffer.put("ABORT".getBytes());
+              client.close();
+            } else {
+              buffer.put("OK".getBytes());
+              ids.add(id);
+              client.register(selector, SelectionKey.OP_READ);
+            }
+            buffer.flip();
+            client.write(buffer);
+            buffer.clear();
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
             client.read(buffer);
