@@ -84,13 +84,13 @@ public class CrailBenchmarkService implements BenchmarkService {
     void writeResult(String fileName, String data) {
       this.out.write(fileName + "\n");
       this.out.write(data);
-      this.out.write("\n" + EOF + "\n");
+      this.out.write( EOF + "\n");
       this.out.flush();
     }
 
     @Override
     public void close() {
-      this.out.write("\n" + EOM + "\n");
+      this.out.write(EOM + "\n");
       this.out.close();
     }
   }
