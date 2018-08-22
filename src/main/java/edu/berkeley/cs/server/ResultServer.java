@@ -51,7 +51,7 @@ public class ResultServer implements Runnable {
         });
         t.start();
       } catch (IOException e) {
-        e.printStackTrace();
+        return;
       }
     }
   }
