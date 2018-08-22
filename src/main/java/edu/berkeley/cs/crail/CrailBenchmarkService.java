@@ -270,7 +270,7 @@ public class CrailBenchmarkService implements BenchmarkService {
       s3Client.putObject(request);
 
       log.info("Uploaded results " + key + " to s3://" + RESULT_BUCKET + "/" + key);
-    } catch(SdkClientException | IOException e) {
+    } catch (Exception e) {
       e.printStackTrace(log.getPrintWriter());
       log.flush();
     }
