@@ -46,9 +46,7 @@ public class Main {
     Map<String, String> conf = ini.get("crail");
     BenchmarkService service;
     if (command.equalsIgnoreCase("invoke")) {
-      service = LambdaInvokerFactory.builder()
-          .lambdaClient(AWSLambdaClientBuilder.defaultClient())
-          .build(BenchmarkService.class);
+      service = LambdaInvokerFactory.builder().build(BenchmarkService.class);
     } else if (command.equalsIgnoreCase("invoke-local")) {
       service = localService();
     } else {
