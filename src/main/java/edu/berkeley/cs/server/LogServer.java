@@ -53,8 +53,6 @@ public class LogServer implements Runnable {
           if (key.isAcceptable()) {
             SocketChannel client = serverSocket.accept();
             client.configureBlocking(false);
-            client.register(selector, SelectionKey.OP_READ);
-
             client.read(buffer);
             buffer.flip();
             String id = StandardCharsets.UTF_8.decode(buffer).toString().trim();
@@ -70,6 +68,7 @@ public class LogServer implements Runnable {
             buffer.flip();
             client.write(buffer);
             buffer.clear();
+            client.register(selector, SelectionKey.OP_READ);
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
             client.read(buffer);
