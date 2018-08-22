@@ -1,7 +1,6 @@
 package edu.berkeley.cs.server;
 
 import java.io.BufferedReader;
-import java.io.Closeable;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -10,7 +9,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ResultServer implements Runnable, Closeable {
+public class ResultServer implements Runnable {
   private static final String EOF = "::";
   private static final String EOC = "::::";
 
@@ -26,7 +25,7 @@ public class ResultServer implements Runnable, Closeable {
 
   @Override
   public void run() {
-    while (numClosed.get() < numConnections) {
+    while (!serverSocket.isClosed()) {
       try {
         Socket socket = serverSocket.accept();
         Thread t = new Thread(() -> {
@@ -43,7 +42,9 @@ public class ResultServer implements Runnable, Closeable {
             }
             in.close();
             int n = numClosed.incrementAndGet();
-            System.out.println("Closed " + n + " connections.");
+            if (n == numConnections) {
+              serverSocket.close();
+            }
           } catch (IOException e) {
             e.printStackTrace();
           }
@@ -52,18 +53,6 @@ public class ResultServer implements Runnable, Closeable {
       } catch (IOException e) {
         e.printStackTrace();
       }
-    }
-    try {
-      close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
-
-  @Override
-  public void close() throws IOException {
-    if (serverSocket != null) {
-      serverSocket.close();
     }
   }
 }
