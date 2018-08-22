@@ -53,21 +53,6 @@ public class LogServer implements Runnable {
           if (key.isAcceptable()) {
             SocketChannel client = serverSocket.accept();
             client.configureBlocking(false);
-            client.read(buffer);
-            buffer.flip();
-            String id = StandardCharsets.UTF_8.decode(buffer).toString().trim();
-            buffer.clear();
-            System.out.println("Received connection from " + client.getRemoteAddress() + " with ID=[" + id + "]");
-            if (ids.contains(id)) {
-              System.out.println("Aborting " + client.getRemoteAddress() + ": Duplicate function");
-              buffer.put("ABORT\n".getBytes());
-            } else {
-              ids.add(id);
-              buffer.put("OK\n".getBytes());
-            }
-            buffer.flip();
-            client.write(buffer);
-            buffer.clear();
             client.register(selector, SelectionKey.OP_READ);
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
@@ -84,6 +69,20 @@ public class LogServer implements Runnable {
             } else if (msgBuf.contains(ABORT)) {
               printMessages(client.getRemoteAddress(), msgBuf.replace(EOM, "Aborted execution"));
               client.close();
+            } else if (msgBuf.contains("LAMBDA_ID:")) {
+              String id = msgBuf.replace("LAMBDA_ID:", "");
+              System.out.println("Received connection from " + client.getRemoteAddress() + " with ID=[" + id + "]");
+              buffer.clear();
+              if (ids.contains(id)) {
+                System.out.println("Aborting " + client.getRemoteAddress() + ": Duplicate function");
+                buffer.put("ABORT\n".getBytes());
+              } else {
+                ids.add(id);
+                buffer.put("OK\n".getBytes());
+              }
+              buffer.flip();
+              client.write(buffer);
+              buffer.clear();
             } else {
               printMessages(client.getRemoteAddress(), msgBuf);
             }

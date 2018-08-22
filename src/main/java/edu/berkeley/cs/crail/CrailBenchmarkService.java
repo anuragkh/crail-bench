@@ -36,7 +36,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
 
     void init(String id) throws IOException {
-      write(id);
+      write("LAMBDA_ID:" + id);
       String response = in.readLine();
       if (response.equalsIgnoreCase("ABORT")) {
         write("ABORT");
