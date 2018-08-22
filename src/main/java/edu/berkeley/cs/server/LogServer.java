@@ -67,7 +67,7 @@ public class LogServer implements Runnable {
                 serverSocket.close();
               }
             } else if (msgBuf.contains(ABORT)) {
-              printMessages(client.getRemoteAddress(), msgBuf.replace(EOM, "Aborted execution"));
+              printMessages(client.getRemoteAddress(), msgBuf.replace(ABORT, "Aborted execution"));
               client.close();
             } else if (msgBuf.contains("LAMBDA_ID:")) {
               String id = msgBuf.replace("LAMBDA_ID:", "");
