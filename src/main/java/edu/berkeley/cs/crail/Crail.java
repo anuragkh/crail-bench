@@ -32,7 +32,7 @@ class Crail implements Closeable {
   private static final String DEFAULT_CACHEPATH = "/tmp/cache";
   private static final String DEFAULT_CACHELIMIT = "268435456";
 
-  void init(Properties conf, Logger log) throws Exception {
+  void init(Properties conf, Logger log, boolean create) throws Exception {
     CrailConfiguration c = new CrailConfiguration();
     c.set("crail.namenode.address", conf.getProperty("namenode_address", DEFAULT_NAMENODE));
     c.set("crail.storage.types", conf.getProperty("storage_mode", DEFAULT_STORAGE));
@@ -59,9 +59,8 @@ class Crail implements Closeable {
 
     log.info("Buffer size: " + mBuffer.capacity());
 
-    if (!createBasePath()) {
-      log.warn("Path already exists: " + mBasePath);
-    } else {
+    if (create) {
+      createBasePath();
       log.info("Path created: " + mBasePath);
     }
   }
@@ -96,14 +95,9 @@ class Crail implements Closeable {
     mStore.getStatistics().print("close");
   }
 
-  private boolean createBasePath() {
-    try {
-      mStore.create(mBasePath, CrailNodeType.DIRECTORY, CrailStorageClass.DEFAULT,
-          CrailLocationClass.DEFAULT, true).get();
-    } catch (Exception e) {
-      return false;
-    }
-    return true;
+  private void createBasePath() throws Exception {
+    mStore.create(mBasePath, CrailNodeType.DIRECTORY, CrailStorageClass.DEFAULT,
+        CrailLocationClass.DEFAULT, true).get();
   }
 
   private CrailFile createFile(String key) throws Exception {

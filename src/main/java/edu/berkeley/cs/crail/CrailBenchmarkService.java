@@ -19,7 +19,8 @@ public class CrailBenchmarkService implements BenchmarkService {
   private static final int MAX_ERRORS = 1000;
   private static final int BENCHMARK_READ = 1;
   private static final int BENCHMARK_WRITE = 2;
-  private static final int BENCHMARK_DESTROY = 4;
+  private static final int BENCHMARK_CREATE = 4;
+  private static final int BENCHMARK_DESTROY = 8;
   private static final String CRAIL_HOME = "CRAIL_HOME";
   private static final String LAMBDA_TASK_ROOT = "LAMBDA_TASK_ROOT";
 
@@ -106,7 +107,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     void writeResult(String fileName, String data) {
       this.out.write(fileName + "\n");
       this.out.write(data);
-      this.out.write( EOF + "\n");
+      this.out.write(EOF + "\n");
       this.out.flush();
     }
 
@@ -135,13 +136,16 @@ public class CrailBenchmarkService implements BenchmarkService {
     } else {
       throw new RuntimeException("Unrecognized key distribution: " + distribution);
     }
-    String modeStr = conf.getOrDefault("mode", "write_read_destroy");
+    String modeStr = conf.getOrDefault("mode", "create_write_read_destroy");
     int mode = 0;
     if (modeStr.contains("read")) {
       mode |= BENCHMARK_READ;
     }
     if (modeStr.contains("write")) {
       mode |= BENCHMARK_WRITE;
+    }
+    if (modeStr.contains("create")) {
+      mode |= BENCHMARK_CREATE;
     }
     if (modeStr.contains("destroy")) {
       mode |= BENCHMARK_DESTROY;
@@ -206,7 +210,7 @@ public class CrailBenchmarkService implements BenchmarkService {
       crailHome = System.getenv(LAMBDA_TASK_ROOT);
       if (crailHome != null) {
         log.info("Setting environment variable CRAIL_HOME to " + crailHome);
-        injectEnvironmentVariable(CRAIL_HOME, crailHome);
+        injectEnv(crailHome);
       } else {
         log.warn("CRAIL_HOME is not set, may not load appropriate configuration variables");
       }
@@ -215,7 +219,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
 
     log.info("Initializing storage interface...");
-    c.init(conf, log);
+    c.init(conf, log, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
 
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
       StringBuilder lw = new StringBuilder();
@@ -325,17 +329,17 @@ public class CrailBenchmarkService implements BenchmarkService {
     return System.nanoTime() / 1000;
   }
 
-  private static void injectEnvironmentVariable(String key, String value) throws Exception {
+  private static void injectEnv(String value) throws Exception {
     Class<?> processEnvironment = Class.forName("java.lang.ProcessEnvironment");
 
     Field unmodifiableMapField = getAccessibleField(processEnvironment,
         "theUnmodifiableEnvironment");
     Object unmodifiableMap = unmodifiableMapField.get(null);
-    injectIntoUnmodifiableMap(key, value, unmodifiableMap);
+    injectIntoUnmodifiableMap(value, unmodifiableMap);
 
     Field mapField = getAccessibleField(processEnvironment, "theEnvironment");
     Map<String, String> map = (Map<String, String>) mapField.get(null);
-    map.put(key, value);
+    map.put(CrailBenchmarkService.CRAIL_HOME, value);
   }
 
   private static Field getAccessibleField(Class<?> clazz, String fieldName)
@@ -346,13 +350,12 @@ public class CrailBenchmarkService implements BenchmarkService {
     return field;
   }
 
-  private static void injectIntoUnmodifiableMap(String key, String value, Object map)
+  private static void injectIntoUnmodifiableMap(String value, Object map)
       throws ReflectiveOperationException {
-
     Class unmodifiableMap = Class.forName("java.util.Collections$UnmodifiableMap");
     Field field = getAccessibleField(unmodifiableMap, "m");
     Object obj = field.get(map);
-    ((Map<String, String>) obj).put(key, value);
+    ((Map<String, String>) obj).put(CrailBenchmarkService.CRAIL_HOME, value);
   }
 
 }

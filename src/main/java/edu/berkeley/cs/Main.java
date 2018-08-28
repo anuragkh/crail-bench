@@ -1,6 +1,5 @@
 package edu.berkeley.cs;
 
-import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.invoke.LambdaInvokerFactory;
 import edu.berkeley.cs.crail.CrailBenchmarkService;
 import edu.berkeley.cs.server.LogServer;
@@ -27,6 +26,40 @@ public class Main {
     };
   }
 
+  private static BenchmarkService makeService(String command) {
+    BenchmarkService service = null;
+    if (command.equalsIgnoreCase("invoke")) {
+      service = LambdaInvokerFactory.builder().build(BenchmarkService.class);
+    } else if (command.equalsIgnoreCase("invoke-local")) {
+      service = localService();
+    } else {
+      System.err.println("Unrecognized command: " + command);
+      System.exit(0);
+    }
+    return service;
+  }
+
+  private static BenchmarkService[] makeServices(String command, int n) {
+    BenchmarkService[] services = new BenchmarkService[n];
+    for (int i = 0; i < n; i++) {
+      services[i] = makeService(command);
+    }
+    return services;
+  }
+
+  private static void invokePeriodically(BenchmarkService[] services, Map<String, String> conf,
+      int period, int numPeriods) throws InterruptedException {
+    int perPeriod = services.length / numPeriods;
+    for (int i = 0; i < numPeriods; i++) {
+      for (int j = 0; j < perPeriod; j++) {
+        int lambdaId = i * perPeriod + j;
+        conf.put("lambda_id", String.valueOf(lambdaId));
+        services[lambdaId].handler(conf);
+      }
+      Thread.sleep(period * 1000);
+    }
+  }
+
   public static void main(String[] args) throws IOException, InterruptedException {
     if (args.length != 2) {
       System.err.println("Usage: bench_runner [command] [conf_file]");
@@ -35,7 +68,7 @@ public class Main {
     String command = args[0];
     String iniFile = args[1];
 
-    Thread logThread = new Thread(new LogServer(8888, 1));
+    Thread logThread = new Thread(new LogServer(8888, 1, 1));
     logThread.start();
 
     Thread resultThread = new Thread(new ResultServer(8889, 1));
@@ -44,17 +77,18 @@ public class Main {
     Ini ini = new Ini();
     ini.load(new File(iniFile));
     Map<String, String> conf = ini.get("crail");
-    BenchmarkService service;
-    if (command.equalsIgnoreCase("invoke")) {
-      service = LambdaInvokerFactory.builder().build(BenchmarkService.class);
-    } else if (command.equalsIgnoreCase("invoke-local")) {
-      service = localService();
+    String mode = conf.getOrDefault("mode", "create_write_read_destroy");
+    if (mode.startsWith("scale:")) {
+      String[] parts = mode.split(":");
+      conf.put("mode", parts[1]);
+      int n = Integer.parseInt(parts[2]);
+      int period = Integer.parseInt(parts[3]);
+      int numPeriods = Integer.parseInt(parts[4]);
+      BenchmarkService[] services = makeServices(command, n * numPeriods);
+      invokePeriodically(services, conf, period, numPeriods);
     } else {
-      System.err.println("Unrecognized command: " + command);
-      return;
+      makeService(command).handler(conf);
     }
-    assert service != null;
-    service.handler(conf);
 
     logThread.join();
     resultThread.join();

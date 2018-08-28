@@ -1,16 +1,17 @@
 [crail]
 distribution = sequential
-size = 1024
-num_ops = 1000
-mode = write_read_destroy
+size = 134217728
+num_ops = 16
+mode = create_write_read_destroy
 warm_up = true
 timeout = 240
 host = ec2-34-229-11-54.compute-1.amazonaws.com
 logger_port = 8888
 result_port = 8889
 path = /test
-namenode_address = crail://ec2-54-236-22-55.compute-1.amazonaws.com:9060
+namenode_address = crail://ec2-34-229-11-54.compute-1.amazonaws.com:9060
 storage_mode = org.apache.crail.storage.tcp.TcpStorageTier
-block_size = 1048576
-buffer_size = 1048576
+block_size = 4096
+buffer_size = 4096
 rpc_type = org.apache.crail.namenode.rpc.tcp.TcpNameNode
+

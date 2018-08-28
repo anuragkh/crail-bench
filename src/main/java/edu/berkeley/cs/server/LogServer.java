@@ -23,8 +23,10 @@ public class LogServer implements Runnable {
   private ByteBuffer buffer;
   private int numConnections;
   private Set<String> ids;
+  private Set<SocketChannel> waitingForTrigger;
+  private int triggerCount;
 
-  public LogServer(int port, int numConnections) throws IOException {
+  public LogServer(int port, int numConnections, int triggerCount) throws IOException {
     this.selector = Selector.open();
     this.serverSocket = ServerSocketChannel.open();
     this.serverSocket.bind(new InetSocketAddress("0.0.0.0", port));
@@ -32,7 +34,9 @@ public class LogServer implements Runnable {
     this.serverSocket.register(selector, SelectionKey.OP_ACCEPT);
     this.buffer = ByteBuffer.allocate(4096);
     this.numConnections = numConnections;
+    this.triggerCount = triggerCount;
     this.ids = new HashSet<>();
+    this.waitingForTrigger = new HashSet<>();
   }
 
   @Override
@@ -76,13 +80,21 @@ public class LogServer implements Runnable {
               buffer.clear();
               if (ids.contains(id)) {
                 buffer.put("ABORT\n".getBytes());
+                buffer.flip();
+                client.write(buffer);
+                buffer.clear();
               } else {
                 ids.add(id);
-                buffer.put("OK\n".getBytes());
+                waitingForTrigger.add(client);
+                if (waitingForTrigger.size() == triggerCount) {
+                  for (SocketChannel channel: waitingForTrigger) {
+                    buffer.put("OK\n".getBytes());
+                    buffer.flip();
+                    channel.write(buffer);
+                    buffer.clear();
+                  }
+                }
               }
-              buffer.flip();
-              client.write(buffer);
-              buffer.clear();
             } else {
               printMessages(client.getRemoteAddress(), msgBuf);
             }

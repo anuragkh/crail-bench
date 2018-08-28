@@ -3,7 +3,7 @@ from six.moves import configparser
 import sys
 
 config = configparser.ConfigParser()
-config.read('conf/crail-bench.conf')
+config.read('conf/crail-bench.ini.template')
 print('Config: {}'.format(config))
 config['crail']['size'] = sys.argv[1]
 config['crail']['num_ops'] = sys.argv[2]
