@@ -158,6 +158,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     int resultPort = Integer.parseInt(conf.getOrDefault("result_port", "8889"));
     String id = conf.getOrDefault("lambda_id", "0");
 
+    System.out.println("Connecting to logger...");
     Logger log;
     try {
       log = new Logger(host, logPort);
@@ -166,7 +167,7 @@ public class CrailBenchmarkService implements BenchmarkService {
       return;
     }
 
-    System.out.println("Connecting to logger...");
+    System.out.println("Initializing...");
     if (!log.init(id)) {
       return;
     }
