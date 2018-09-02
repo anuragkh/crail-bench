@@ -204,24 +204,21 @@ public class CrailBenchmarkService implements BenchmarkService {
       int size, int nOps, int batchSize, int mode, boolean warmUp, long maxUs, Logger log,
       ResultWriter rw) throws Exception {
 
-    log.info("Running benchmark for function ID=[" + id + "]");
+    log.info("Running function ID=[" + id + "], num_ops=" + nOps);
 
     int errCount = 0;
     int warmUpCount = nOps / 10;
     long startUs = nowUs();
     String outPrefix = "crail_" + id + "_" + String.valueOf(size);
 
-    String crailHome;
-    if ((crailHome = System.getenv(CRAIL_HOME)) == null) {
-      crailHome = System.getenv(LAMBDA_TASK_ROOT);
+    if (System.getenv(CRAIL_HOME) == null) {
+      String crailHome = System.getenv(LAMBDA_TASK_ROOT);
       if (crailHome != null) {
         log.info("Setting environment variable CRAIL_HOME to " + crailHome);
         injectEnv(crailHome);
       } else {
         log.warn("CRAIL_HOME is not set, may not load appropriate configuration variables");
       }
-    } else {
-      log.info("CRAIL_HOME is already set to " + crailHome);
     }
 
     log.info("Initializing storage interface...");

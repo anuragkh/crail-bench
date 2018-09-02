@@ -144,7 +144,7 @@ class Crail implements Closeable {
     try {
       return mStore.lookup(key).get().asFile();
     } catch (Exception e) {
-      throw new FileNotFoundException(key);
+      throw new FileNotFoundException("File does not exist: " + key);
     }
   }
 
