@@ -80,7 +80,8 @@ public class Main {
     String mode = conf.getOrDefault("mode", "create_write_read_destroy");
     if (mode.startsWith("scale:")) {
       String[] parts = mode.split(":");
-      conf.put("mode", parts[1]);
+      mode = parts[1];
+      conf.put("mode", mode);
       int n = Integer.parseInt(parts[2]);
       int period = Integer.parseInt(parts[3]);
       int numPeriods = Integer.parseInt(parts[4]);

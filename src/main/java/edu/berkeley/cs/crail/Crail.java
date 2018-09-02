@@ -2,6 +2,7 @@ package edu.berkeley.cs.crail;
 
 import edu.berkeley.cs.crail.CrailBenchmarkService.Logger;
 import java.io.Closeable;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -46,7 +47,7 @@ class Crail implements Closeable {
     c.set("crail.namenode.rpctype", conf.getProperty("rpc_type", DEFAULT_RPC));
     c.set("crail.cachepath", conf.getProperty("cache_path", DEFAULT_CACHEPATH));
     c.set("crail.cachelimit", conf.getProperty("cache_limit", DEFAULT_CACHELIMIT));
-    mStore = CrailStore.newInstance(new CrailConfiguration());
+    mStore = CrailStore.newInstance(c);
     int mObjectSize = Integer.parseInt(conf.getProperty("size", "1024"));
     mBasePath = conf.getProperty("path", "/test");
 
@@ -101,7 +102,7 @@ class Crail implements Closeable {
       out.write(mBuffer).get().getLen();
       out.close();
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(e.getMessage(), e);
     }
   }
 
@@ -113,7 +114,7 @@ class Crail implements Closeable {
       is.read(mBuffer).get().getLen();
       is.close();
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(e.getMessage(), e);
     }
     return StandardCharsets.UTF_8.decode(mBuffer.getByteBuffer()).toString();
   }
@@ -139,8 +140,12 @@ class Crail implements Closeable {
             true);
   }
 
-  private CrailFile lookupFile(String key) throws Exception {
-    return mStore.lookup(key).get().asFile();
+  private CrailFile lookupFile(String key) throws FileNotFoundException {
+    try {
+      return mStore.lookup(key).get().asFile();
+    } catch (Exception e) {
+      throw new FileNotFoundException(e.getMessage());
+    }
   }
 
   @Override
