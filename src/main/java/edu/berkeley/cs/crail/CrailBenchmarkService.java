@@ -131,7 +131,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     KeyGenerator kGen;
     if (distribution.startsWith("zipf:")) {
       String[] parts = distribution.split(":");
-      kGen = new ZipfKeyGenerator(Integer.parseInt(parts[2]), Integer.parseInt(parts[1]));
+      kGen = new ZipfKeyGenerator(Double.parseDouble(parts[2]), Integer.parseInt(parts[1]));
     } else if (distribution.equalsIgnoreCase("sequential")) {
       kGen = new SequentialKeyGenerator();
     } else {
