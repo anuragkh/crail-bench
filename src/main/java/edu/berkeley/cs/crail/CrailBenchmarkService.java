@@ -5,7 +5,9 @@ import edu.berkeley.cs.keygen.KeyGenerator;
 import edu.berkeley.cs.keygen.SequentialKeyGenerator;
 import edu.berkeley.cs.keygen.ZipfKeyGenerator;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.Closeable;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -92,7 +94,12 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
   }
 
-  public class ResultWriter implements Closeable {
+  public interface ResultWriter extends Closeable {
+
+    void writeResult(String fileName, String data);
+  }
+
+  public class NetworkResultWriter implements ResultWriter {
 
     private static final String EOF = "::";
     private static final String EOC = "::::";
@@ -100,12 +107,12 @@ public class CrailBenchmarkService implements BenchmarkService {
     private Socket socket;
     private PrintWriter out;
 
-    ResultWriter(String host, int port) throws IOException {
+    NetworkResultWriter(String host, int port) throws IOException {
       this.socket = new Socket(host, port);
       this.out = new PrintWriter(socket.getOutputStream(), true);
     }
 
-    void writeResult(String fileName, String data) {
+    public void writeResult(String fileName, String data) {
       this.out.write(fileName + "\n");
       this.out.write(data);
       this.out.write(EOF + "\n");
@@ -116,6 +123,27 @@ public class CrailBenchmarkService implements BenchmarkService {
     public void close() {
       this.out.write(EOC + "\n");
       this.out.close();
+    }
+  }
+
+  public class LocalResultWriter implements ResultWriter {
+
+    LocalResultWriter() {}
+
+    @Override
+    public void writeResult(String fileName, String data) {
+      try {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+        writer.write(data.toCharArray());
+        writer.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    @Override
+    public void close() throws IOException {
+      // Do nothing
     }
   }
 
@@ -160,8 +188,8 @@ public class CrailBenchmarkService implements BenchmarkService {
     long remaining = timeoutUs - (nowUs() - startUs);
     String host = conf.getOrDefault("host", "localhost");
     int logPort = Integer.parseInt(conf.getOrDefault("logger_port", "8888"));
-    int resultPort = Integer.parseInt(conf.getOrDefault("result_port", "8889"));
     String id = conf.getOrDefault("lambda_id", "0");
+    boolean local = Boolean.parseBoolean(conf.getOrDefault("local", "false"));
 
     Logger log;
     try {
@@ -177,7 +205,12 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     ResultWriter rw;
     try {
-      rw = new ResultWriter(host, resultPort);
+      if (local) {
+        rw = new LocalResultWriter();
+      } else {
+        int resultPort = Integer.parseInt(conf.getOrDefault("result_port", "8889"));
+        rw = new NetworkResultWriter(host, resultPort);
+      }
     } catch (IOException e) {
       e.printStackTrace();
       return;

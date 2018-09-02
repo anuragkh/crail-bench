@@ -41,6 +41,10 @@ public class LogServer implements Runnable {
     this.waitingForTrigger = new HashSet<>();
   }
 
+  public LogServer(int port) throws IOException {
+    this(port, 1, 1);
+  }
+
   @Override
   public void run() {
     try {

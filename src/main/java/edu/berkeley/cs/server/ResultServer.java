@@ -23,6 +23,10 @@ public class ResultServer implements Runnable {
     this.numConnections = numConnections;
   }
 
+  public ResultServer(int port) throws IOException {
+    this(port, 1);
+  }
+
   @Override
   public void run() {
     System.out.println("Result server waiting for connections");

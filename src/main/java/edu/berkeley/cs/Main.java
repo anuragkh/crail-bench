@@ -27,11 +27,13 @@ public class Main {
     };
   }
 
-  private static BenchmarkService makeService(String command) {
+  private static BenchmarkService makeService(String command, Map<String, String> conf) {
     BenchmarkService service = null;
     if (command.equalsIgnoreCase("invoke")) {
+      conf.put("local", "false");
       service = LambdaInvokerFactory.builder().build(BenchmarkService.class);
     } else if (command.equalsIgnoreCase("invoke-local")) {
+      conf.put("local", "true");
       service = localService();
     } else {
       System.err.println("Unrecognized command: " + command);
@@ -40,10 +42,10 @@ public class Main {
     return service;
   }
 
-  private static BenchmarkService[] makeServices(String command, int n) {
+  private static BenchmarkService[] makeServices(String command, Map<String, String> conf, int n) {
     BenchmarkService[] services = new BenchmarkService[n];
     for (int i = 0; i < n; i++) {
-      services[i] = makeService(command);
+      services[i] = makeService(command, conf);
     }
     return services;
   }
@@ -74,6 +76,9 @@ public class Main {
     Thread logThread;
     Thread resultThread;
 
+    int logPort = 8888;
+    int resultPort = 8889;
+
     Ini ini = new Ini();
     ini.load(new File(iniFile));
     Map<String, String> conf = ini.get("crail");
@@ -85,26 +90,26 @@ public class Main {
       int n = Integer.parseInt(parts[2]);
       int period = Integer.parseInt(parts[3]);
       int numPeriods = Integer.parseInt(parts[4]);
-
+      int numFunctions = n * numPeriods;
       System.out.println("Running scale benchmark with mode=" + mode + " n=" + n + " period=" +
           period + " numPeriods=" + numPeriods);
 
-      logThread = new Thread(new LogServer(8888, n * numPeriods, numPeriods));
+      logThread = new Thread(new LogServer(logPort, numFunctions, numPeriods));
       logThread.start();
 
-      resultThread = new Thread(new ResultServer(8889, n * numPeriods));
+      resultThread = new Thread(new ResultServer(resultPort, numFunctions));
       resultThread.start();
 
-      BenchmarkService[] services = makeServices(command, n * numPeriods);
+      BenchmarkService[] services = makeServices(command, conf, numFunctions);
       invokePeriodically(services, conf, period, numPeriods);
     } else {
-      logThread = new Thread(new LogServer(8888, 1, 1));
+      logThread = new Thread(new LogServer(logPort));
       logThread.start();
 
-      resultThread = new Thread(new ResultServer(8889, 1));
+      resultThread = new Thread(new ResultServer(resultPort));
       resultThread.start();
 
-      makeService(command).handler(conf);
+      makeService(command, conf).handler(conf);
     }
 
     logThread.join();
