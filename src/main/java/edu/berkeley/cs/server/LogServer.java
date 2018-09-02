@@ -39,7 +39,7 @@ public class LogServer implements Runnable {
   @Override
   public void run() {
     try {
-      System.out.println("Log server waiting for connections");
+      System.out.println("[LogServer] Waiting for connections");
       int numClosed = 0;
       while (serverSocket.isOpen()) {
         int readyChannels = selector.select();
@@ -86,7 +86,7 @@ public class LogServer implements Runnable {
 
   private void printMessages(SocketAddress address, String msgBuf) {
     for (String msg : msgBuf.split("\\r?\\n")) {
-      System.err.println("Function @ " + address + ": " + msg);
+      System.err.println("[Function @ " + address + "] " + msg);
     }
   }
 }

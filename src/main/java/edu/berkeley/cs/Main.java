@@ -51,18 +51,12 @@ public class Main {
     return services;
   }
 
-  private static void invokePeriodically(BenchmarkService[] services, Map<String, String> conf,
-      int period, int numPeriods) throws InterruptedException {
-    int perPeriod = services.length / numPeriods;
-    for (int i = 0; i < numPeriods; i++) {
-      for (int j = 0; j < perPeriod; j++) {
-        int lambdaId = i * perPeriod + j;
-        System.out.println("Launching lambda_id=" + lambdaId);
-        Map<String, String> mConf = new HashMap<>(conf);
-        mConf.put("lambda_id", String.valueOf(lambdaId));
-        services[lambdaId].handler(mConf);
-      }
-      Thread.sleep(period * 1000);
+  private static void invokeAll(BenchmarkService[] services, Map<String, String> conf) {
+    for (int i = 0; i < services.length; i++) {
+      System.out.println("Launching lambda_id=" + i);
+      Map<String, String> mConf = new HashMap<>(conf);
+      mConf.put("lambda_id", String.valueOf(i));
+      services[i].handler(mConf);
     }
   }
 
@@ -108,7 +102,7 @@ public class Main {
       }
 
       BenchmarkService[] services = makeServices(command, conf, numFunctions);
-      invokePeriodically(services, conf, period, numPeriods);
+      invokeAll(services, conf);
     } else {
       logThread = new Thread(new LogServer(logPort));
       logThread.start();

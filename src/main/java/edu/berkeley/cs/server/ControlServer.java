@@ -49,7 +49,7 @@ public class ControlServer implements Runnable {
   @Override
   public void run() {
     try {
-      System.out.println("Control server waiting for connections");
+      System.out.println("[ControlServer] Waiting for connections");
       boolean run = true;
       while (run) {
         int readyChannels = selector.select();
@@ -95,9 +95,10 @@ public class ControlServer implements Runnable {
       selector.close();
 
       for (int i = 0; i < numTriggers; i++) {
-        System.out.println("[ControlServer] Running " + numTriggers + " functions...");
+        System.out.println("[ControlServer] Running " + connectionsPerTrigger + " functions...");
         for (int j = 0; j < connectionsPerTrigger; j++) {
-          SocketChannel channel = ready.get(i);
+          int idx = i * connectionsPerTrigger + j;
+          SocketChannel channel = ready.get(idx);
           System.out.println("[ControlServer] Running " + channel.getRemoteAddress() + "...");
           buffer.clear();
           buffer.put("OK\n".getBytes());

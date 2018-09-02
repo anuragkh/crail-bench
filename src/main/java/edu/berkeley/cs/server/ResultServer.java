@@ -29,7 +29,7 @@ public class ResultServer implements Runnable {
 
   @Override
   public void run() {
-    System.out.println("Result server waiting for connections");
+    System.out.println("[ResultServer] Waiting for connections");
     while (!serverSocket.isClosed()) {
       try {
         Socket socket = serverSocket.accept();
