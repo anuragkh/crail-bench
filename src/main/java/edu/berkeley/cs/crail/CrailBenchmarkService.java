@@ -21,6 +21,7 @@ public class CrailBenchmarkService implements BenchmarkService {
   private static final int BENCHMARK_WRITE = 2;
   private static final int BENCHMARK_CREATE = 4;
   private static final int BENCHMARK_DESTROY = 8;
+  private static final int BENCHMARK_LOAD = 16;
   private static final String CRAIL_HOME = "CRAIL_HOME";
   private static final String LAMBDA_TASK_ROOT = "LAMBDA_TASK_ROOT";
 
@@ -150,6 +151,9 @@ public class CrailBenchmarkService implements BenchmarkService {
     if (modeStr.contains("destroy")) {
       mode |= BENCHMARK_DESTROY;
     }
+    if (modeStr.contains("load")) {
+      mode |= BENCHMARK_LOAD;
+    }
     int batchSize = Integer.parseInt(conf.getOrDefault("batch_size", "1024"));
     boolean warmUp = Boolean.parseBoolean(conf.getOrDefault("warm_up", "true"));
     long timeoutUs = Long.parseLong(conf.getOrDefault("timeout", "240")) * 1000 * 1000;
@@ -184,11 +188,7 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     Crail c = new Crail();
     try {
-      if (modeStr.equalsIgnoreCase("load")) {
-        c.load(nOps, batchSize);
-      } else {
-        benchmark(id, c, props, kGen, size, nOps, mode, warmUp, remaining, log, rw);
-      }
+      benchmark(id, c, props, kGen, size, nOps, batchSize, mode, warmUp, remaining, log, rw);
     } catch (Exception e) {
       log.error(e.getMessage());
       e.printStackTrace(log.getPrintWriter());
@@ -204,8 +204,8 @@ public class CrailBenchmarkService implements BenchmarkService {
   }
 
   private static void benchmark(String id, Crail c, Properties conf, KeyGenerator keyGen,
-      int size, int nOps, int mode, boolean warmUp, long maxUs, Logger log, ResultWriter rw)
-      throws Exception {
+      int size, int nOps, int batchSize, int mode, boolean warmUp, long maxUs, Logger log,
+      ResultWriter rw) throws Exception {
 
     log.info("Running benchmark for function ID=[" + id + "]");
 
@@ -229,6 +229,12 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     log.info("Initializing storage interface...");
     c.init(conf, log, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
+
+    if ((mode & BENCHMARK_LOAD) == BENCHMARK_LOAD) {
+      log.info("Loading data...");
+      c.load(nOps, batchSize);
+      log.info("Loading complete.");
+    }
 
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
       StringBuilder lw = new StringBuilder();
