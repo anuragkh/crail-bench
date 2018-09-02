@@ -87,6 +87,7 @@ public class LogServer implements Runnable {
                 ids.add(id);
                 waitingForTrigger.add(client);
                 if (waitingForTrigger.size() == triggerCount) {
+                  System.out.println("Running " + triggerCount + " functions...");
                   for (SocketChannel channel: waitingForTrigger) {
                     System.out.println("Running " + channel.getRemoteAddress() + "...");
                     buffer.put("OK\n".getBytes());
@@ -94,6 +95,7 @@ public class LogServer implements Runnable {
                     channel.write(buffer);
                     buffer.clear();
                   }
+                  waitingForTrigger.clear();
                 }
               }
             } else {
