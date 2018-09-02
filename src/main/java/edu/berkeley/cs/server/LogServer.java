@@ -42,6 +42,7 @@ public class LogServer implements Runnable {
   @Override
   public void run() {
     try {
+      System.out.println("Log server waiting for connections");
       int numClosed = 0;
       while (serverSocket.isOpen()) {
         int readyChannels = selector.select();

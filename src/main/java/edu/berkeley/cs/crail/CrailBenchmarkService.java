@@ -166,10 +166,12 @@ public class CrailBenchmarkService implements BenchmarkService {
       return;
     }
 
+    System.out.println("Connecting to logger...");
     if (!log.init(id)) {
       return;
     }
 
+    System.out.println("Connecting to result writer...");
     ResultWriter rw;
     try {
       rw = new ResultWriter(host, resultPort);
