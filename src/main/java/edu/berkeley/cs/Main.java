@@ -6,6 +6,7 @@ import edu.berkeley.cs.server.LogServer;
 import edu.berkeley.cs.server.ResultServer;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import org.ini4j.Ini;
 
@@ -53,8 +54,10 @@ public class Main {
     for (int i = 0; i < numPeriods; i++) {
       for (int j = 0; j < perPeriod; j++) {
         int lambdaId = i * perPeriod + j;
-        conf.put("lambda_id", String.valueOf(lambdaId));
-        services[lambdaId].handler(conf);
+        System.out.println("Launching lambda_id=" + lambdaId);
+        Map<String, String> mConf = new HashMap<>(conf);
+        mConf.put("lambda_id", String.valueOf(lambdaId));
+        services[lambdaId].handler(mConf);
       }
       Thread.sleep(period * 1000);
     }
