@@ -150,6 +150,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     if (modeStr.contains("destroy")) {
       mode |= BENCHMARK_DESTROY;
     }
+    int batchSize = Integer.parseInt(conf.getOrDefault("batch_size", "1024"));
     boolean warmUp = Boolean.parseBoolean(conf.getOrDefault("warm_up", "true"));
     long timeoutUs = Long.parseLong(conf.getOrDefault("timeout", "240")) * 1000 * 1000;
     long remaining = timeoutUs - (nowUs() - startUs);
@@ -181,8 +182,13 @@ public class CrailBenchmarkService implements BenchmarkService {
       return;
     }
 
+    Crail c = new Crail();
     try {
-      benchmark(id, new Crail(), props, kGen, size, nOps, mode, warmUp, remaining, log, rw);
+      if (modeStr.equalsIgnoreCase("load")) {
+        c.load(nOps, batchSize);
+      } else {
+        benchmark(id, c, props, kGen, size, nOps, mode, warmUp, remaining, log, rw);
+      }
     } catch (Exception e) {
       log.error(e.getMessage());
       e.printStackTrace(log.getPrintWriter());

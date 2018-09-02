@@ -54,7 +54,6 @@ public class LogServer implements Runnable {
         Iterator<SelectionKey> iter = selectedKeys.iterator();
         while (iter.hasNext()) {
           SelectionKey key = iter.next();
-
           if (key.isAcceptable()) {
             SocketChannel client = serverSocket.accept();
             client.configureBlocking(false);

@@ -5,15 +5,20 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Properties;
+import java.util.concurrent.Future;
 import org.apache.crail.CrailBuffer;
 import org.apache.crail.CrailFile;
 import org.apache.crail.CrailInputStream;
 import org.apache.crail.CrailLocationClass;
+import org.apache.crail.CrailNode;
 import org.apache.crail.CrailNodeType;
 import org.apache.crail.CrailOutputStream;
+import org.apache.crail.CrailResult;
 import org.apache.crail.CrailStorageClass;
 import org.apache.crail.CrailStore;
+import org.apache.crail.Upcoming;
 import org.apache.crail.conf.CrailConfiguration;
 import org.apache.crail.conf.CrailConstants;
 import org.apache.crail.memory.OffHeapBuffer;
@@ -65,6 +70,32 @@ class Crail implements Closeable {
     }
   }
 
+  void load(int numKeys, int batchSize) throws Exception {
+    int numBatches = numKeys / batchSize;
+    for (int b = 0; b < numBatches; b++) {
+      // Create all files first
+      ArrayList<Upcoming<CrailNode>> fileHandles = new ArrayList<>();
+      for (int i = 0; i < batchSize; i++) {
+        fileHandles.add(createFileAsync(String.valueOf(i)));
+      }
+
+      ArrayList<Future<CrailResult>> writeResults = new ArrayList<>();
+      ArrayList<CrailOutputStream> writeStreams = new ArrayList<>();
+      for (int i = 0; i < batchSize; i++) {
+        mBuffer.clear();
+        CrailFile f = fileHandles.get(i).get().asFile();
+        CrailOutputStream out = f.getDirectOutputStream(Integer.MAX_VALUE);
+        writeResults.add(out.write(mBuffer));
+        writeStreams.add(out);
+      }
+
+      for (int i = 0; i < batchSize; i++) {
+        writeResults.get(i).get().getLen();
+        writeStreams.get(i).close();
+      }
+    }
+  }
+
   void write(String key) {
     try {
       CrailFile f = createFile(mBasePath + "/" + key);
@@ -83,6 +114,7 @@ class Crail implements Closeable {
       CrailInputStream is = f.getDirectInputStream(f.getCapacity());
       mBuffer.clear();
       is.read(mBuffer).get().getLen();
+      is.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -101,9 +133,13 @@ class Crail implements Closeable {
   }
 
   private CrailFile createFile(String key) throws Exception {
+    return createFileAsync(key).get().asFile();
+  }
+
+  private Upcoming<CrailNode> createFileAsync(String key) throws Exception {
     return mStore
         .create(key, CrailNodeType.DATAFILE, CrailStorageClass.PARENT, CrailLocationClass.PARENT,
-            true).get().asFile();
+            true);
   }
 
   private CrailFile lookupFile(String key) throws Exception {
