@@ -124,7 +124,6 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     Properties props = new Properties();
     props.putAll(conf);
-    System.out.println("Properties: " + props.toString());
 
     String distribution = conf.getOrDefault("distribution", "sequential");
     int size = Integer.parseInt(conf.getOrDefault("size", "1024"));
@@ -164,7 +163,6 @@ public class CrailBenchmarkService implements BenchmarkService {
     int resultPort = Integer.parseInt(conf.getOrDefault("result_port", "8889"));
     String id = conf.getOrDefault("lambda_id", "0");
 
-    System.out.println("Connecting to logger...");
     Logger log;
     try {
       log = new Logger(host, logPort);
@@ -173,12 +171,10 @@ public class CrailBenchmarkService implements BenchmarkService {
       return;
     }
 
-    System.out.println("Initializing...");
     if (!log.init(id)) {
       return;
     }
 
-    System.out.println("Connecting to result writer...");
     ResultWriter rw;
     try {
       rw = new ResultWriter(host, resultPort);
