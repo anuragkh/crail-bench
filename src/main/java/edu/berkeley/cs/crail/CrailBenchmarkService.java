@@ -130,8 +130,9 @@ public class CrailBenchmarkService implements BenchmarkService {
     int size = Integer.parseInt(conf.getOrDefault("size", "1024"));
     int nOps = Integer.parseInt(conf.getOrDefault("num_ops", "1000"));
     KeyGenerator kGen;
-    if (distribution.equalsIgnoreCase("zipf")) {
-      kGen = new ZipfKeyGenerator(0.0, nOps);
+    if (distribution.startsWith("zipf:")) {
+      String[] parts = distribution.split(":");
+      kGen = new ZipfKeyGenerator(Integer.parseInt(parts[2]), Integer.parseInt(parts[1]));
     } else if (distribution.equalsIgnoreCase("sequential")) {
       kGen = new SequentialKeyGenerator();
     } else {
