@@ -76,7 +76,6 @@ public class LogServer implements Runnable {
               client.close();
             } else if (msgBuf.contains("LAMBDA_ID:")) {
               String id = msgBuf.replace("LAMBDA_ID:", "");
-              System.out.println("Initializing " + client.getRemoteAddress() + ", ID=[" + id + "]");
               buffer.clear();
               if (ids.contains(id)) {
                 buffer.put("ABORT\n".getBytes());
@@ -84,10 +83,12 @@ public class LogServer implements Runnable {
                 client.write(buffer);
                 buffer.clear();
               } else {
+                System.out.println("Queuing " + client.getRemoteAddress() + ", ID=[" + id + "]");
                 ids.add(id);
                 waitingForTrigger.add(client);
                 if (waitingForTrigger.size() == triggerCount) {
                   for (SocketChannel channel: waitingForTrigger) {
+                    System.out.println("Running " + channel.getRemoteAddress() + "...");
                     buffer.put("OK\n".getBytes());
                     buffer.flip();
                     channel.write(buffer);

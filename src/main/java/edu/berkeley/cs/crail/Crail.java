@@ -50,8 +50,6 @@ class Crail implements Closeable {
     int mObjectSize = Integer.parseInt(conf.getProperty("size", "1024"));
     mBasePath = conf.getProperty("path", "/test");
 
-    log.info("Initializing Crail with path: " + mBasePath + ", size: " + mObjectSize);
-
     if (mObjectSize == CrailConstants.BUFFER_SIZE) {
       mBuffer = mStore.allocateBuffer();
     } else if (mObjectSize < CrailConstants.BUFFER_SIZE) {
@@ -61,8 +59,6 @@ class Crail implements Closeable {
     } else {
       mBuffer = OffHeapBuffer.wrap(ByteBuffer.allocateDirect(mObjectSize));
     }
-
-    log.info("Buffer size: " + mBuffer.capacity());
 
     if (create) {
       createBasePath();
