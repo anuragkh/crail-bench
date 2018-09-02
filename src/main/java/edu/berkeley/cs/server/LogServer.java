@@ -24,9 +24,10 @@ public class LogServer implements Runnable {
   private int numConnections;
   private Set<String> ids;
   private Set<SocketChannel> waitingForTrigger;
-  private int triggerCount;
+  private int numTriggers;
+  private int connectionsPerTrigger;
 
-  public LogServer(int port, int numConnections, int triggerCount) throws IOException {
+  public LogServer(int port, int numConnections, int numTriggers) throws IOException {
     this.selector = Selector.open();
     this.serverSocket = ServerSocketChannel.open();
     this.serverSocket.bind(new InetSocketAddress("0.0.0.0", port));
@@ -34,7 +35,8 @@ public class LogServer implements Runnable {
     this.serverSocket.register(selector, SelectionKey.OP_ACCEPT);
     this.buffer = ByteBuffer.allocate(4096);
     this.numConnections = numConnections;
-    this.triggerCount = triggerCount;
+    this.numTriggers = numTriggers;
+    this.connectionsPerTrigger = numConnections / numTriggers;
     this.ids = new HashSet<>();
     this.waitingForTrigger = new HashSet<>();
   }
@@ -86,8 +88,8 @@ public class LogServer implements Runnable {
                 System.out.println("Queuing " + client.getRemoteAddress() + ", ID=[" + id + "]");
                 ids.add(id);
                 waitingForTrigger.add(client);
-                if (waitingForTrigger.size() == triggerCount) {
-                  System.out.println("Running " + triggerCount + " functions...");
+                if (waitingForTrigger.size() == connectionsPerTrigger) {
+                  System.out.println("Running " + numTriggers + " functions...");
                   for (SocketChannel channel: waitingForTrigger) {
                     System.out.println("Running " + channel.getRemoteAddress() + "...");
                     buffer.put("OK\n".getBytes());

@@ -85,6 +85,9 @@ public class Main {
       int period = Integer.parseInt(parts[3]);
       int numPeriods = Integer.parseInt(parts[4]);
 
+      System.out.println("Running scale benchmark with mode=" + mode + " n=" + n + " period=" +
+          period + " numPeriods=" + numPeriods);
+
       logThread = new Thread(new LogServer(8888, n * numPeriods, numPeriods));
       logThread.start();
 
