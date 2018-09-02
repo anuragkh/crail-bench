@@ -53,7 +53,7 @@ public class Main {
 
   private static void invokeAll(BenchmarkService[] services, Map<String, String> conf) {
     for (int i = 0; i < services.length; i++) {
-      System.out.println("Launching lambda_id=" + i);
+      System.out.println("[Main] Launching lambda_id=" + i);
       Map<String, String> mConf = new HashMap<>(conf);
       mConf.put("lambda_id", String.valueOf(i));
       services[i].handler(mConf);
@@ -87,9 +87,9 @@ public class Main {
       int period = Integer.parseInt(parts[3]);
       int numPeriods = Integer.parseInt(parts[4]);
       int numFunctions = n * numPeriods;
-      System.out.println("Running scale benchmark with mode=" + mode + " n=" + n + " period=" +
-          period + " numPeriods=" + numPeriods);
-
+      System.out.println("[Main] Running scale benchmark");
+      System.out.println("[Main] mode=" + mode + " n=" + n + " period=" + period + " numPeriods=" +
+          numPeriods);
       logThread = new Thread(new LogServer(logPort, numFunctions));
       logThread.start();
 
