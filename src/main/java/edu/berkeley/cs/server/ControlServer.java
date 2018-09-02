@@ -49,7 +49,7 @@ public class ControlServer implements Runnable {
   @Override
   public void run() {
     try {
-      System.out.println("Log server waiting for connections");
+      System.out.println("Control server waiting for connections");
       boolean run = true;
       while (run) {
         int readyChannels = selector.select();
@@ -65,7 +65,6 @@ public class ControlServer implements Runnable {
             SocketChannel client = serverSocket.accept();
             client.configureBlocking(false);
             client.register(selector, SelectionKey.OP_READ);
-            System.out.println("Received connection from " + client.getRemoteAddress());
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
             buffer.clear();
@@ -81,10 +80,10 @@ public class ControlServer implements Runnable {
               buffer.flip();
               client.write(buffer);
             } else {
-              System.out.println("Queuing " + client.getRemoteAddress() + ", ID=[" + id + "]");
+              System.out.println("[ControlServer] Queuing " + client.getRemoteAddress() + ", ID=[" + id + "]");
               ids.add(id);
               ready.add(client);
-              System.out.println("Progress: " + ids.size() + "/" + numConnections);
+              System.out.println("[ControlServer] Progress: " + ids.size() + "/" + numConnections);
               if (ready.size() == numConnections) {
                 run = false;
               }
@@ -96,16 +95,16 @@ public class ControlServer implements Runnable {
       selector.close();
 
       for (int i = 0; i < numTriggers; i++) {
-        System.out.println("Running " + numTriggers + " functions...");
+        System.out.println("[ControlServer] Running " + numTriggers + " functions...");
         for (int j = 0; j < connectionsPerTrigger; j++) {
           SocketChannel channel = ready.get(i);
-          System.out.println("Running " + channel.getRemoteAddress() + "...");
+          System.out.println("[ControlServer] Running " + channel.getRemoteAddress() + "...");
           buffer.clear();
           buffer.put("OK\n".getBytes());
           buffer.flip();
           channel.write(buffer);
         }
-        System.out.println("End of wave " + i);
+        System.out.println("[ControlServer] End of wave " + i);
         Thread.sleep(triggerPeriod * 1000);
       }
 

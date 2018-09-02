@@ -55,7 +55,6 @@ public class LogServer implements Runnable {
             SocketChannel client = serverSocket.accept();
             client.configureBlocking(false);
             client.register(selector, SelectionKey.OP_READ);
-            System.out.println("Received connection from " + client.getRemoteAddress());
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
             client.read(buffer);
