@@ -74,7 +74,7 @@ public class Main {
     String iniFile = args[1];
 
     Thread logThread;
-    Thread resultThread;
+    Thread resultThread = null;
 
     int logPort = 8888;
     int resultPort = 8889;
@@ -97,8 +97,10 @@ public class Main {
       logThread = new Thread(new LogServer(logPort, numFunctions, numPeriods));
       logThread.start();
 
-      resultThread = new Thread(new ResultServer(resultPort, numFunctions));
-      resultThread.start();
+      if (!command.equalsIgnoreCase("invoke-local")) {
+        resultThread = new Thread(new ResultServer(resultPort, numFunctions));
+        resultThread.start();
+      }
 
       BenchmarkService[] services = makeServices(command, conf, numFunctions);
       invokePeriodically(services, conf, period, numPeriods);
@@ -106,13 +108,17 @@ public class Main {
       logThread = new Thread(new LogServer(logPort));
       logThread.start();
 
-      resultThread = new Thread(new ResultServer(resultPort));
-      resultThread.start();
+      if (!command.equalsIgnoreCase("invoke-local")) {
+        resultThread = new Thread(new ResultServer(resultPort));
+        resultThread.start();
+      }
 
       makeService(command, conf).handler(conf);
     }
 
     logThread.join();
-    resultThread.join();
+    if (resultThread != null) {
+      resultThread.join();
+    }
   }
 }
