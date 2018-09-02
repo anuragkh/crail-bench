@@ -68,11 +68,8 @@ public class Main {
     String command = args[0];
     String iniFile = args[1];
 
-    Thread logThread = new Thread(new LogServer(8888, 1, 1));
-    logThread.start();
-
-    Thread resultThread = new Thread(new ResultServer(8889, 1));
-    resultThread.start();
+    Thread logThread;
+    Thread resultThread;
 
     Ini ini = new Ini();
     ini.load(new File(iniFile));
@@ -84,9 +81,22 @@ public class Main {
       int n = Integer.parseInt(parts[2]);
       int period = Integer.parseInt(parts[3]);
       int numPeriods = Integer.parseInt(parts[4]);
+
+      logThread = new Thread(new LogServer(8888, n * numPeriods, numPeriods));
+      logThread.start();
+
+      resultThread = new Thread(new ResultServer(8889, n * numPeriods));
+      resultThread.start();
+
       BenchmarkService[] services = makeServices(command, n * numPeriods);
       invokePeriodically(services, conf, period, numPeriods);
     } else {
+      logThread = new Thread(new LogServer(8888, 1, 1));
+      logThread.start();
+
+      resultThread = new Thread(new ResultServer(8889, 1));
+      resultThread.start();
+
       makeService(command).handler(conf);
     }
 
