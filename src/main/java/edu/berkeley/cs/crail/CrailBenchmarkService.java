@@ -31,30 +31,10 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     private Socket socket;
     private PrintWriter out;
-    private BufferedReader in;
 
     Logger(String host, int port) throws IOException {
       this.socket = new Socket(host, port);
       this.out = new PrintWriter(socket.getOutputStream(), true);
-      this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    }
-
-    boolean init(String id) {
-      write("LAMBDA_ID:" + id);
-      try {
-        String response = in.readLine();
-        if (response.equalsIgnoreCase("ABORT")) {
-          write("ABORT");
-          this.socket.shutdownInput();
-          this.socket.shutdownOutput();
-          this.socket.close();
-          return false;
-        } else {
-          return response.equals("OK");
-        }
-      } catch (IOException e) {
-        return false;
-      }
     }
 
     void info(String msg) {
@@ -88,6 +68,48 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     public void close() throws IOException {
       write("CLOSE");
+      this.socket.shutdownInput();
+      this.socket.shutdownOutput();
+      this.socket.close();
+    }
+  }
+
+  public class Controller implements Closeable {
+
+    private Socket socket;
+    private PrintWriter out;
+    private BufferedReader in;
+
+    Controller(String host, int port) throws IOException {
+      this.socket = new Socket(host, port);
+      this.out = new PrintWriter(socket.getOutputStream(), true);
+      this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    }
+
+    boolean signal(String id) {
+      write("LAMBDA_ID:" + id);
+      try {
+        String response = in.readLine();
+        if (response.equalsIgnoreCase("ABORT")) {
+          this.socket.shutdownInput();
+          this.socket.shutdownOutput();
+          this.socket.close();
+          return false;
+        } else {
+          return response.equals("OK");
+        }
+      } catch (IOException e) {
+        return false;
+      }
+    }
+
+    private void write(String data) {
+      this.out.write(data + "\n");
+      this.out.flush();
+    }
+
+    @Override
+    public void close() throws IOException {
       this.socket.shutdownInput();
       this.socket.shutdownOutput();
       this.socket.close();
@@ -128,7 +150,8 @@ public class CrailBenchmarkService implements BenchmarkService {
 
   public class LocalResultWriter implements ResultWriter {
 
-    LocalResultWriter() {}
+    LocalResultWriter() {
+    }
 
     @Override
     public void writeResult(String fileName, String data) {
@@ -142,7 +165,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
       // Do nothing
     }
   }
@@ -188,6 +211,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     long remaining = timeoutUs - (nowUs() - startUs);
     String host = conf.getOrDefault("host", "localhost");
     int logPort = Integer.parseInt(conf.getOrDefault("logger_port", "8888"));
+    int controlPort = Integer.parseInt(conf.getOrDefault("control_port", "8889"));
     String id = conf.getOrDefault("lambda_id", "0");
     boolean local = Boolean.parseBoolean(conf.getOrDefault("local", "false"));
 
@@ -199,7 +223,15 @@ public class CrailBenchmarkService implements BenchmarkService {
       return;
     }
 
-    if (!log.init(id)) {
+    Controller controller;
+    try {
+      controller = new Controller(host, controlPort);
+    } catch (IOException e) {
+      e.printStackTrace();
+      return;
+    }
+
+    if (!controller.signal(id)) {
       return;
     }
 
@@ -208,7 +240,7 @@ public class CrailBenchmarkService implements BenchmarkService {
       if (local) {
         rw = new LocalResultWriter();
       } else {
-        int resultPort = Integer.parseInt(conf.getOrDefault("result_port", "8889"));
+        int resultPort = Integer.parseInt(conf.getOrDefault("result_port", "8890"));
         rw = new NetworkResultWriter(host, resultPort);
       }
     } catch (IOException e) {

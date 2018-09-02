@@ -2,6 +2,7 @@ package edu.berkeley.cs;
 
 import com.amazonaws.services.lambda.invoke.LambdaInvokerFactory;
 import edu.berkeley.cs.crail.CrailBenchmarkService;
+import edu.berkeley.cs.server.ControlServer;
 import edu.berkeley.cs.server.LogServer;
 import edu.berkeley.cs.server.ResultServer;
 import java.io.File;
@@ -74,15 +75,16 @@ public class Main {
     String iniFile = args[1];
 
     Thread logThread;
+    Thread controlThread;
     Thread resultThread = null;
-
-    int logPort = 8888;
-    int resultPort = 8889;
 
     Ini ini = new Ini();
     ini.load(new File(iniFile));
     Map<String, String> conf = ini.get("crail");
     String mode = conf.getOrDefault("mode", "create_write_read_destroy");
+    int logPort = Integer.parseInt(conf.getOrDefault("logger_port", "8888"));
+    int controlPort = Integer.parseInt(conf.getOrDefault("control_port", "8889"));
+    int resultPort = Integer.parseInt(conf.getOrDefault("result_port", "8890"));
     if (mode.startsWith("scale:")) {
       String[] parts = mode.split(":");
       mode = parts[1];
@@ -94,8 +96,11 @@ public class Main {
       System.out.println("Running scale benchmark with mode=" + mode + " n=" + n + " period=" +
           period + " numPeriods=" + numPeriods);
 
-      logThread = new Thread(new LogServer(logPort, numFunctions, numPeriods));
+      logThread = new Thread(new LogServer(logPort, numFunctions));
       logThread.start();
+
+      controlThread = new Thread(new ControlServer(controlPort, numFunctions, numPeriods, period));
+      controlThread.start();
 
       if (!command.equalsIgnoreCase("invoke-local")) {
         resultThread = new Thread(new ResultServer(resultPort, numFunctions));
@@ -107,6 +112,9 @@ public class Main {
     } else {
       logThread = new Thread(new LogServer(logPort));
       logThread.start();
+
+      controlThread = new Thread(new ControlServer(controlPort));
+      controlThread.start();
 
       if (!command.equalsIgnoreCase("invoke-local")) {
         resultThread = new Thread(new ResultServer(resultPort));

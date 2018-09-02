@@ -2,27 +2,32 @@ package edu.berkeley.cs.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class LogServer implements Runnable {
+public class ControlServer implements Runnable {
 
-  private static final String EOM = "CLOSE";
-  private static final String ABORT = "ABORT";
+  private static final String ABORT = "ABORT\n";
 
   private Selector selector;
   private ServerSocketChannel serverSocket;
   private ByteBuffer buffer;
   private int numConnections;
+  private Set<String> ids;
+  private ArrayList<SocketChannel> ready;
+  private int numTriggers;
+  private int connectionsPerTrigger;
+  private int triggerPeriod;
 
-  public LogServer(int port, int numConnections) throws IOException {
+  public ControlServer(int port, int numConnections, int numTriggers, int triggerPeriod) throws IOException {
     this.selector = Selector.open();
     this.serverSocket = ServerSocketChannel.open();
     this.serverSocket.bind(new InetSocketAddress("0.0.0.0", port));
@@ -30,18 +35,23 @@ public class LogServer implements Runnable {
     this.serverSocket.register(selector, SelectionKey.OP_ACCEPT);
     this.buffer = ByteBuffer.allocate(4096);
     this.numConnections = numConnections;
+    this.numTriggers = numTriggers;
+    this.connectionsPerTrigger = numConnections / numTriggers;
+    this.triggerPeriod = triggerPeriod;
+    this.ids = new HashSet<>();
+    this.ready = new ArrayList<>();
   }
 
-  public LogServer(int port) throws IOException {
-    this(port, 1);
+  public ControlServer(int port) throws IOException {
+    this(port, 1, 1, 0);
   }
 
   @Override
   public void run() {
     try {
       System.out.println("Log server waiting for connections");
-      int numClosed = 0;
-      while (serverSocket.isOpen()) {
+      boolean run = true;
+      while (run) {
         int readyChannels = selector.select();
         if (readyChannels == 0) {
           continue;
@@ -58,36 +68,51 @@ public class LogServer implements Runnable {
             System.out.println("Received connection from " + client.getRemoteAddress());
           } else if (key.isReadable()) {
             SocketChannel client = (SocketChannel) key.channel();
+            buffer.clear();
             client.read(buffer);
             buffer.flip();
             String msgBuf = StandardCharsets.UTF_8.decode(buffer).toString().trim();
-            if (msgBuf.contains(EOM)) {
-              printMessages(client.getRemoteAddress(), msgBuf.replace(EOM, "Finished execution"));
-              client.close();
-              numClosed++;
-              if (numClosed == numConnections) {
-                serverSocket.close();
-              }
-            } else if (msgBuf.contains(ABORT)) {
-              printMessages(client.getRemoteAddress(), msgBuf.replace(ABORT, "Aborted execution"));
-              client.close();
+
+            String id = msgBuf.replace("LAMBDA_ID:", "");
+
+            if (ids.contains(id)) {
+              buffer.clear();
+              buffer.put(ABORT.getBytes());
+              buffer.flip();
+              client.write(buffer);
             } else {
-              printMessages(client.getRemoteAddress(), msgBuf);
+              System.out.println("Queuing " + client.getRemoteAddress() + ", ID=[" + id + "]");
+              ids.add(id);
+              ready.add(client);
+              System.out.println("Progress: " + ids.size() + "/" + numConnections);
+              if (ready.size() == numConnections) {
+                run = false;
+              }
             }
-            buffer.clear();
           }
           iter.remove();
         }
       }
       selector.close();
-    } catch (IOException e) {
+
+      for (int i = 0; i < numTriggers; i++) {
+        System.out.println("Running " + numTriggers + " functions...");
+        for (int j = 0; j < connectionsPerTrigger; j++) {
+          SocketChannel channel = ready.get(i);
+          System.out.println("Running " + channel.getRemoteAddress() + "...");
+          buffer.clear();
+          buffer.put("OK\n".getBytes());
+          buffer.flip();
+          channel.write(buffer);
+        }
+        System.out.println("End of wave " + i);
+        Thread.sleep(triggerPeriod * 1000);
+      }
+
+      serverSocket.close();
+    } catch (IOException | InterruptedException e) {
       e.printStackTrace();
     }
   }
 
-  private void printMessages(SocketAddress address, String msgBuf) {
-    for (String msg : msgBuf.split("\\r?\\n")) {
-      System.err.println("Function @ " + address + ": " + msg);
-    }
-  }
 }
