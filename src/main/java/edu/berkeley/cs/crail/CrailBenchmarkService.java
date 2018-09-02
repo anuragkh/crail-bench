@@ -232,7 +232,7 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     if ((mode & BENCHMARK_LOAD) == BENCHMARK_LOAD) {
       log.info("Loading data...");
-      c.load(nOps, batchSize);
+      c.load(nOps, batchSize, log);
       log.info("Loading complete.");
     }
 
@@ -262,7 +262,7 @@ public class CrailBenchmarkService implements BenchmarkService {
           handleError(log, ++errCount, e);
         }
         long tEnd = nowUs();
-        lw.append(String.valueOf(tEnd - tBegin)).append("\n");
+        lw.append(tEnd).append("\t").append(String.valueOf(tEnd - tBegin)).append("\n");
       }
       long wEnd = nowUs();
       log.info("Finished writes.");
@@ -304,7 +304,7 @@ public class CrailBenchmarkService implements BenchmarkService {
           handleError(log, ++errCount, e);
         }
         long tEnd = nowUs();
-        lr.append(String.valueOf(tEnd - tBegin)).append("\n");
+        lr.append(tEnd).append("\t").append(String.valueOf(tEnd - tBegin)).append("\n");
       }
       long rEnd = nowUs();
       log.info("Finished reads.");

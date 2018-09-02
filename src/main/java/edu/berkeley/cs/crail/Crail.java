@@ -70,7 +70,7 @@ class Crail implements Closeable {
     }
   }
 
-  void load(int numKeys, int batchSize) throws Exception {
+  void load(int numKeys, int batchSize, Logger logger) throws Exception {
     int numBatches = numKeys / batchSize;
     for (int b = 0; b < numBatches; b++) {
       // Create all files first
@@ -93,6 +93,7 @@ class Crail implements Closeable {
         writeResults.get(i).get().getLen();
         writeStreams.get(i).close();
       }
+      logger.info("Finished batch " + b);
     }
   }
 
