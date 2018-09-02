@@ -212,7 +212,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     int errCount = 0;
     int warmUpCount = nOps / 10;
     long startUs = nowUs();
-    String outPrefix = "crail_" + String.valueOf(size);
+    String outPrefix = "crail_" + id + "_" + String.valueOf(size);
 
     String crailHome;
     if ((crailHome = System.getenv(CRAIL_HOME)) == null) {
