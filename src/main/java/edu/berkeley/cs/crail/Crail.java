@@ -76,7 +76,7 @@ class Crail implements Closeable {
       // Create all files first
       ArrayList<Upcoming<CrailNode>> fileHandles = new ArrayList<>();
       for (int i = 0; i < batchSize; i++) {
-        fileHandles.add(createFileAsync(String.valueOf(i)));
+        fileHandles.add(createFileAsync(mBasePath + "/" + String.valueOf(i)));
       }
 
       ArrayList<Future<CrailResult>> writeResults = new ArrayList<>();
