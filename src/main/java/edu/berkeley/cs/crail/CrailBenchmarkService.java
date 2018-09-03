@@ -29,7 +29,6 @@ public class CrailBenchmarkService implements BenchmarkService {
   private static final int BENCHMARK_LOAD = 16;
   private static final String CRAIL_HOME = "CRAIL_HOME";
   private static final String LAMBDA_TASK_ROOT = "LAMBDA_TASK_ROOT";
-  private static final int PROGRESS_OPS = 50000;
 
   public class Logger implements Closeable {
 
@@ -270,7 +269,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     int warmUpCount = nOps / 10;
     String outPrefix = "/tmp/crail_" + id + "_" + String.valueOf(size);
 
-    log.info("Running function ID=[" + id + "], num_ops=" + nOps);
+    log.info("Running function ID=[" + id + "], num_ops=" + nOps + ", timeoutUs=" + maxUs);
 
     if (System.getenv(CRAIL_HOME) == null) {
       String crailHome = System.getenv(LAMBDA_TASK_ROOT);
@@ -325,6 +324,8 @@ public class CrailBenchmarkService implements BenchmarkService {
       double wElapsedS = ((double) (wEnd - wBegin)) / 1000000.0;
       tw.append(String.valueOf(nOps / wElapsedS)).append("\n");
 
+      lw.close();
+      rw.close();
       rw.writeResult(outPrefix + "_write_latency.txt");
       rw.writeResult(outPrefix + "_write_throughput.txt");
     }
@@ -367,6 +368,8 @@ public class CrailBenchmarkService implements BenchmarkService {
       double rElapsedS = ((double) (rEnd - rBegin)) / 1000000.0;
       tr.append(String.valueOf(nOps / rElapsedS)).append("\n");
 
+      lr.close();
+      tr.close();
       rw.writeResult(outPrefix + "_read_latency.txt");
       rw.writeResult(outPrefix + "_read_throughput.txt");
     }
