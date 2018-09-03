@@ -13,6 +13,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
 
@@ -26,6 +29,7 @@ public class CrailBenchmarkService implements BenchmarkService {
   private static final int BENCHMARK_LOAD = 16;
   private static final String CRAIL_HOME = "CRAIL_HOME";
   private static final String LAMBDA_TASK_ROOT = "LAMBDA_TASK_ROOT";
+  private static final int PROGRESS_OPS = 50000;
 
   public class Logger implements Closeable {
 
@@ -118,7 +122,7 @@ public class CrailBenchmarkService implements BenchmarkService {
 
   public interface ResultWriter extends Closeable {
 
-    void writeResult(String fileName, String data);
+    void writeResult(String fileName) throws IOException;
   }
 
   public class NetworkResultWriter implements ResultWriter {
@@ -134,9 +138,9 @@ public class CrailBenchmarkService implements BenchmarkService {
       this.out = new PrintWriter(socket.getOutputStream(), true);
     }
 
-    public void writeResult(String fileName, String data) {
+    public void writeResult(String fileName) throws IOException {
       this.out.write(fileName + "\n");
-      this.out.write(data);
+      this.out.write(new String(Files.readAllBytes(Paths.get(fileName)), StandardCharsets.UTF_8));
       this.out.write(EOF + "\n");
       this.out.flush();
     }
@@ -154,14 +158,8 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
 
     @Override
-    public void writeResult(String fileName, String data) {
-      try {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-        writer.write(data.toCharArray());
-        writer.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+    public void writeResult(String fileName) {
+      // Do nothing
     }
 
     @Override
@@ -294,8 +292,8 @@ public class CrailBenchmarkService implements BenchmarkService {
     }
 
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
-      StringBuilder lw = new StringBuilder();
-      StringBuilder tw = new StringBuilder();
+      BufferedWriter lw = new BufferedWriter(new FileWriter(outPrefix + "_write_latency.txt"));
+      BufferedWriter tw = new BufferedWriter(new FileWriter(outPrefix + "_write_throughput.txt"));
 
       if (warmUp) {
         log.info("Warm-up writes...");
@@ -319,7 +317,7 @@ public class CrailBenchmarkService implements BenchmarkService {
           handleError(log, ++errCount, e);
         }
         long tEnd = nowUs();
-        lw.append(tEnd).append("\t").append(String.valueOf(tEnd - tBegin)).append("\n");
+        lw.append(String.valueOf(tEnd)).append("\t").append(String.valueOf(tEnd - tBegin)).append("\n");
       }
       long wEnd = nowUs();
       log.info("Finished writes.");
@@ -327,15 +325,15 @@ public class CrailBenchmarkService implements BenchmarkService {
       double wElapsedS = ((double) (wEnd - wBegin)) / 1000000.0;
       tw.append(String.valueOf(nOps / wElapsedS)).append("\n");
 
-      rw.writeResult(outPrefix + "_write_latency.txt", lw.toString());
-      rw.writeResult(outPrefix + "_write_throughput.txt", tw.toString());
+      rw.writeResult(outPrefix + "_write_latency.txt");
+      rw.writeResult(outPrefix + "_write_throughput.txt");
     }
 
     errCount = 0;
     keyGen.reset();
     if ((mode & BENCHMARK_READ) == BENCHMARK_READ) {
-      StringBuilder lr = new StringBuilder();
-      StringBuilder tr = new StringBuilder();
+      BufferedWriter lr = new BufferedWriter(new FileWriter(outPrefix + "_write_latency.txt"));
+      BufferedWriter tr = new BufferedWriter(new FileWriter(outPrefix + "_write_throughput.txt"));
 
       if (warmUp) {
         log.info("Warm-up reads...");
@@ -361,7 +359,7 @@ public class CrailBenchmarkService implements BenchmarkService {
           handleError(log, ++errCount, e);
         }
         long tEnd = nowUs();
-        lr.append(tEnd).append("\t").append(String.valueOf(tEnd - tBegin)).append("\n");
+        lr.append(String.valueOf(tEnd)).append("\t").append(String.valueOf(tEnd - tBegin)).append("\n");
       }
       long rEnd = nowUs();
       log.info("Finished reads.");
@@ -369,8 +367,8 @@ public class CrailBenchmarkService implements BenchmarkService {
       double rElapsedS = ((double) (rEnd - rBegin)) / 1000000.0;
       tr.append(String.valueOf(nOps / rElapsedS)).append("\n");
 
-      rw.writeResult(outPrefix + "_read_latency.txt", lr.toString());
-      rw.writeResult(outPrefix + "_read_throughput.txt", tr.toString());
+      rw.writeResult(outPrefix + "_read_latency.txt");
+      rw.writeResult(outPrefix + "_read_throughput.txt");
     }
 
     if ((mode & BENCHMARK_DESTROY) == BENCHMARK_DESTROY) {
