@@ -67,30 +67,23 @@ class Crail implements Closeable {
     }
   }
 
-  void load(int numKeys, int batchSize, Logger logger) throws Exception {
-    int numBatches = numKeys / batchSize;
-    for (int b = 0; b < numBatches; b++) {
-      // Create all files first
-      ArrayList<Upcoming<CrailNode>> fileHandles = new ArrayList<>();
-      for (int i = 0; i < batchSize; i++) {
-        fileHandles.add(createFileAsync(mBasePath + "/" + String.valueOf(i)));
-      }
+  void load(int numKeys, int numLoadThreads) throws Exception {
+    final int keysPerThread = numKeys / numLoadThreads;
+    Thread loadThreads[] = new Thread[numLoadThreads];
+    for (int t = 0; t < numLoadThreads; t++) {
+      final int idx = t;
+      loadThreads[t] = new Thread(() -> {
+        int begin = idx * keysPerThread;
+        int end = (idx + 1) * keysPerThread;
+        for (int i = begin; i < end; ++i) {
+          write(String.valueOf(i));
+        }
+      });
+      loadThreads[t].start();
+    }
 
-      ArrayList<Future<CrailResult>> writeResults = new ArrayList<>();
-      ArrayList<CrailOutputStream> writeStreams = new ArrayList<>();
-      for (int i = 0; i < batchSize; i++) {
-        mBuffer.clear();
-        CrailFile f = fileHandles.get(i).get().asFile();
-        CrailOutputStream out = f.getDirectOutputStream(Integer.MAX_VALUE);
-        writeResults.add(out.write(mBuffer));
-        writeStreams.add(out);
-      }
-
-      for (int i = 0; i < batchSize; i++) {
-        writeResults.get(i).get().getLen();
-        writeStreams.get(i).close();
-      }
-      logger.info("Finished batch " + b);
+    for (Thread t: loadThreads) {
+      t.join();
     }
   }
 

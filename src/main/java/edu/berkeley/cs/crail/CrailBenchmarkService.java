@@ -205,7 +205,7 @@ public class CrailBenchmarkService implements BenchmarkService {
     if (modeStr.contains("load")) {
       mode |= BENCHMARK_LOAD;
     }
-    int batchSize = Integer.parseInt(conf.getOrDefault("batch_size", "1024"));
+    int numLoadThreads = Integer.parseInt(conf.getOrDefault("load_threads", "64"));
     boolean warmUp = Boolean.parseBoolean(conf.getOrDefault("warm_up", "true"));
     long timeoutUs = Long.parseLong(conf.getOrDefault("timeout", "240")) * 1000 * 1000;
     long remaining = timeoutUs - (nowUs() - startUs);
@@ -250,7 +250,7 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     Crail c = new Crail();
     try {
-      benchmark(id, c, props, kGen, size, nOps, batchSize, mode, warmUp, remaining, log, rw);
+      benchmark(id, c, props, kGen, size, nOps, numLoadThreads, mode, warmUp, remaining, log, rw);
     } catch (Exception e) {
       log.error(e.getMessage());
       e.printStackTrace(log.getPrintWriter());
@@ -266,7 +266,7 @@ public class CrailBenchmarkService implements BenchmarkService {
   }
 
   private static void benchmark(String id, Crail c, Properties conf, KeyGenerator keyGen,
-      int size, int nOps, int batchSize, int mode, boolean warmUp, long maxUs, Logger log,
+      int size, int nOps, int numLoadThreads, int mode, boolean warmUp, long maxUs, Logger log,
       ResultWriter rw) throws Exception {
 
     log.info("Running function ID=[" + id + "], num_ops=" + nOps);
@@ -291,7 +291,7 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     if ((mode & BENCHMARK_LOAD) == BENCHMARK_LOAD) {
       log.info("Loading data...");
-      c.load(nOps, batchSize, log);
+      c.load(nOps, numLoadThreads);
       log.info("Loading complete.");
     }
 
