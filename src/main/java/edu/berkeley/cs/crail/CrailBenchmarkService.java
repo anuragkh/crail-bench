@@ -171,7 +171,6 @@ public class CrailBenchmarkService implements BenchmarkService {
   }
 
   public void handler(Map<String, String> conf) {
-    long startUs = nowUs();
 
     Properties props = new Properties();
     props.putAll(conf);
@@ -208,7 +207,6 @@ public class CrailBenchmarkService implements BenchmarkService {
     int numLoadThreads = Integer.parseInt(conf.getOrDefault("load_threads", "64"));
     boolean warmUp = Boolean.parseBoolean(conf.getOrDefault("warm_up", "true"));
     long timeoutUs = Long.parseLong(conf.getOrDefault("timeout", "240")) * 1000 * 1000;
-    long remaining = timeoutUs - (nowUs() - startUs);
     String host = conf.getOrDefault("host", "localhost");
     int logPort = Integer.parseInt(conf.getOrDefault("logger_port", "8888"));
     int controlPort = Integer.parseInt(conf.getOrDefault("control_port", "8889"));
@@ -250,7 +248,7 @@ public class CrailBenchmarkService implements BenchmarkService {
 
     Crail c = new Crail();
     try {
-      benchmark(id, c, props, kGen, size, nOps, numLoadThreads, mode, warmUp, remaining, log, rw);
+      benchmark(id, c, props, kGen, size, nOps, numLoadThreads, mode, warmUp, timeoutUs, log, rw);
     } catch (Exception e) {
       log.error(e.getMessage());
       e.printStackTrace(log.getPrintWriter());
@@ -269,12 +267,12 @@ public class CrailBenchmarkService implements BenchmarkService {
       int size, int nOps, int numLoadThreads, int mode, boolean warmUp, long maxUs, Logger log,
       ResultWriter rw) throws Exception {
 
-    log.info("Running function ID=[" + id + "], num_ops=" + nOps);
-
+    long startUs = nowUs();
     int errCount = 0;
     int warmUpCount = nOps / 10;
-    long startUs = nowUs();
-    String outPrefix = "crail_" + id + "_" + String.valueOf(size);
+    String outPrefix = "/tmp/crail_" + id + "_" + String.valueOf(size);
+
+    log.info("Running function ID=[" + id + "], num_ops=" + nOps);
 
     if (System.getenv(CRAIL_HOME) == null) {
       String crailHome = System.getenv(LAMBDA_TASK_ROOT);
