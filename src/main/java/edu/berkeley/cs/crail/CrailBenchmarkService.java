@@ -333,8 +333,8 @@ public class CrailBenchmarkService implements BenchmarkService {
     errCount = 0;
     keyGen.reset();
     if ((mode & BENCHMARK_READ) == BENCHMARK_READ) {
-      BufferedWriter lr = new BufferedWriter(new FileWriter(outPrefix + "_write_latency.txt"));
-      BufferedWriter tr = new BufferedWriter(new FileWriter(outPrefix + "_write_throughput.txt"));
+      BufferedWriter lr = new BufferedWriter(new FileWriter(outPrefix + "_read_latency.txt"));
+      BufferedWriter tr = new BufferedWriter(new FileWriter(outPrefix + "_read_throughput.txt"));
 
       if (warmUp) {
         log.info("Warm-up reads...");
